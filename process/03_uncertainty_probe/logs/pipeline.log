@@ -1,0 +1,8 @@
+target: AUROC of each signal at identifying a query to a CONTESTED key
+  d_k  seed    acc  u(stable)  u(contested)   AUROC u  AUROC ent  AUROC pos
+   32     0  1.000      3.081         2.152     0.383      0.578      0.502
+   32     1  1.000      2.756         3.142     0.536      0.522      0.504
+   64     0  0.999      4.335         4.782     0.552      0.551      0.502
+   64     1  1.000      3.830         4.163     0.558      0.554      0.504
+  128     0  1.000      3.576         4.201     0.559      0.564      0.502
+  128     1  1.000      3.286         4.884     0.637      0.528      0.504

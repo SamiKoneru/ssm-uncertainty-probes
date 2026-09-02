@@ -1,0 +1,14 @@
+mean beta (write gate) by token slot:
+   op     0.0995
+   key    0.1547
+   value  0.6769
+
+residual ||e_t|| at WRITE-value slots:
+   stable keys    nan
+   contested keys nan
+   ratio          nanx   <- is the signal there AT ALL?
+
+cosine between learned k vectors at key slots:
+   SAME task key      607882038031.6052
+   DIFFERENT task key 245629376148.4626
+   separation         362252661883.1427  <- is addressing aligned?

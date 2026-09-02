@@ -1,0 +1,21 @@
+=== kv_model_v3.pt   (v_from_embed=True, kq_from_embed=True) ===
+accuracy 1.0000
+
+cosine, v_t  same value token 1.0000   different -0.0204
+cosine, k_t  same task key    0.4064   different 0.4614
+
+residual at n-th write of a STABLE key:
+   #1: 9.8935  (n=4901)
+   #2: 1.9440  (n=3380)
+   #3: 1.1910  (n=1748)
+   #4: 0.9950  (n=683)
+   #5: 0.8766  (n=216)
+   #6: 0.9266  (n=71)
+
+residual at writes: stable 5.2735  contested 11.4429   ratio 2.170x
+
+AUROC (contested key):
+   ORACLE last residual     0.830   stable   6.2006  contested  11.1580
+   ORACLE ema               0.825   stable   8.4260  contested  10.3793
+   superposition accum      0.569   stable   4.8700  contested   6.1959
+   superposition +whiten    0.736   stable   0.1039  contested   0.1700

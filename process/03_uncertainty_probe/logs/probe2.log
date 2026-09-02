@@ -1,0 +1,20 @@
+model trained, loss 1.6936
+probe train 16384 positions, test 16384, error rate 0.371
+
+probe (gradient-boosted trees)                test AUROC
+  entropy alone                                   0.8576
+  entropy + maxprob                               0.8755
+  u alone                                         0.5723
+  ||e|| + u (surprise only)                       0.7616
+  pre-head state o (128d)                         0.8243
+  o + ||e|| + u                                   0.8494
+  o + ||e|| + u + entropy + maxprob               0.8823
+
+probe (MLP, for comparison)                   test AUROC
+entropy alone (logistic)                          0.8580
+entropy + maxprob (logistic)                      0.8613
+entropy + maxprob (MLP)                           0.8663
+u alone (logistic)                                0.5729
+MLP on pre-head state o (128d)                    0.8033
+MLP on o + ||e|| + u                              0.8092
+MLP on o + ||e|| + u + entropy + maxprob          0.8536

@@ -1,0 +1,10 @@
+        gate     loss     acc     gain |  accSTAB accNOIS  accREV |   bSTAB   bNOIS    bREV
+        none   1.6329  0.6347    0.00% |    1.000   0.273   0.565 |  0.3870  0.3886  0.3881
+         mlp   1.5524  0.6416    4.93% |    1.000   0.275   0.594 |  0.0327  0.1578  0.1333
+  rate_accum   1.5604  0.6368    4.44% |    1.000   0.269   0.581 |  0.0562  0.1689  0.1395
+  rate_delta   1.5492  0.6379    5.12% |    1.000   0.273   0.581 |  0.4315  0.1473  0.1256   beta_c=0.198
+
+CAN c_t SEE THE AXIS (s1,s2) IS BLIND TO?  AUROC, NOISY vs REVISED
+  (s1,s2) baseline from signinit_test: 0.4763  = chance
+  rate_accum   c_t AUROC = 0.4644   (mean c: NOISY 106.646, REVISED 102.304)
+  rate_delta   c_t AUROC = 0.3690   (mean c: NOISY 7.080, REVISED 6.736)

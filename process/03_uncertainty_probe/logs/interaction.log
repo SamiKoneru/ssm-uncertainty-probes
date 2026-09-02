@@ -1,0 +1,12 @@
+       gate     loss     acc    gain |  accREV | beta on CHANGE writes  |  beta overall
+                                     |         |   STAB   NOIS    REV |   STAB   NOIS    REV
+/Users/skon/Desktop/Projects/wave_ssm/03_delta_uncertainty/interaction_test.py:58: RuntimeWarning: Mean of empty slice.
+  bc = [bt[(cw == i) & sn & ch].mean() for i in range(3)]
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/numpy/_core/_methods.py:145: RuntimeWarning: invalid value encountered in divide
+  ret = ret.dtype.type(ret / rcount)
+        mlp   1.5524  0.6411   4.93% |   0.594 |    nan  0.181  0.302 |  0.038  0.159  0.134  <- NOIS<REV, correct!
+  mlp_inter   1.5476  0.6385   5.23% |   0.583 |    nan  0.152  0.261 |  0.030  0.131  0.116  <- NOIS<REV, correct!
+   mlp_wide   1.5402  0.6408   5.67% |   0.595 |    nan  0.158  0.278 |  0.477  0.133  0.116  <- NOIS<REV, correct!
+
+reference: baseline loss 1.6329, acc 0.6347, accREV 0.565
+oracle_class reached loss 1.5442 (+5.42%), acc 0.6552, accREV 0.662

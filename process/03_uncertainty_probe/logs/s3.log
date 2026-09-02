@@ -1,0 +1,13 @@
+ungated model trained, loss 1.6940
+
+by CLASS OF THE WRITE KEY (only keys seen before)
+statistic                         STABLE     NOISY   REVISED   NOISY-REVISED
+  s1  ||e||                       1.4259    7.8507    6.2265         +1.6242
+  s2  overlap                     0.8929    0.4397    0.5482         -0.1085
+      ||stored||                  9.2710    7.2123    7.4793         -0.2670  <- want NEGATIVE
+  s3  ||stored||/||v||            0.9091    0.7078    0.7326         -0.0248  <- want NEGATIVE
+
+empirical run length (consecutive occurrences writing the SAME value):
+  NOISY    mean 1.350  (n=697)
+  REVISED  mean 2.292  (n=291)
+  predicted: NOISY ~1.33 (1/(1-1/4)), REVISED ~2.86 (1/0.35)

@@ -1,0 +1,17 @@
+model trained, loss 1.6936
+
+mean of each statistic, by the CLASS OF THE KEY BEING WRITTEN
+statistic       STABLE     NOISY   REVISED   NOISY vs REVISED
+  ne            1.4191    7.7988    6.1917            +1.6071
+  cos           0.9690    0.6189    0.7388            -0.1198
+  prj           0.8923    0.4373    0.5458            -0.1085
+
+feature set                                   test AUROC
+  ||e|| alone                                     0.7414
+  overlap (cos) alone                             0.7493
+  overlap (prj) alone                             0.7600
+  ||e|| + cos + prj                               0.7645
+  ||e|| + |R.k| (magnitude only)                  0.7616
+  ||e|| + cos + prj + |R.k| + |C.k|               0.7691
+  entropy + maxprob (reference)                   0.8752
+  everything                                      0.8817

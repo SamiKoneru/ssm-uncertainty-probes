@@ -1,0 +1,22 @@
+learned beta = 0.4605   (was 0.0022 on the STATIONARY induction task)
+final loss 1.539
+
+class            n  accuracy  mean entropy
+stable       28562     1.000         0.783
+slow         14428     0.796         1.408
+volatile     14365     0.024         2.704
+
+SLOW symbols split by whether memory is STALE:
+  fresh (memory ok)      n= 12230  acc 0.935  entropy 1.406
+  STALE (memory wrong)   n=  2198  acc 0.024  entropy 1.417
+
+CONFIDENTLY WRONG steps (bottom-33% entropy AND wrong): 930
+confidently right: 20697   -> error rate among confident steps 0.043
+
+Among CONFIDENT steps only, can each signal tell wrong from right?
+  u (OURS)     AUROC 0.608
+  entropy      AUROC 0.684
+
+Overall AUROC -> ERROR:
+  u (OURS)     0.565
+  entropy      0.922

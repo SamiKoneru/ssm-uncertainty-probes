@@ -1,0 +1,12 @@
+model trained, loss 1.6936
+
+feature set                                     test AUROC
+  ||e_t||  instantaneous surprise, alone            0.7414
+  |R.q_t|  read at QUERY  (what I measured)         0.6155
+  |R.k_t|  read at WRITE KEY, before write          0.5723
+  |R.k_t|  read at WRITE KEY, after write           0.5930
+  ||e_t|| + |R.k_t| after   (floor + history)       0.7616
+  ||e_t|| + |R.k_t| before  (no double count)       0.7616
+  all surprise features                             0.8018
+  entropy + maxprob  (reference)                    0.8752
+  all surprise + entropy + maxprob                  0.8871

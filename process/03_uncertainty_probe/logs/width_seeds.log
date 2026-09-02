@@ -1,0 +1,8 @@
+config                 gate par  loss mean      sd  acc mean      sd   vs base
+input-only baseline         757     1.6322  0.0018    0.6342  0.0018     0.00%
+gate 3->16->1               757     1.5534  0.0026    0.6423  0.0017     4.82%
+gate 3->32->32->1         1,621     1.5428  0.0039    0.6458  0.0046     5.47%
+gate 3->64->64->1         4,885     1.5399  0.0006    0.6453  0.0040     5.65%
+gate 3->128->128->1      17,557     1.5396  0.0014    0.6452  0.0033     5.67%
+
+seeds (0, 1, 2), identical eval stream; sd is across seeds

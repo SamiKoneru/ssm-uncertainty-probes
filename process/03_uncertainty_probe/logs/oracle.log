@@ -1,0 +1,7 @@
+acc by class(x_t) | beta by class(x_{t-1}, the WRITE key)
+
+         gate     loss     acc |  accSTAB accNOIS  accREV |   bSTAB   bNOIS    bREV
+         none   1.6327  0.6345 |    1.000   0.273   0.564 |  0.3866  0.3878  0.3873   (+0.00% loss)
+          mlp   1.5527  0.6408 |    1.000   0.275   0.592 |  0.0420  0.1593  0.1339   (+4.90% loss)
+ oracle_class   1.5442  0.6552 |    1.000   0.270   0.662 |  0.7520  0.2310  0.6169   (+5.42% loss)
+   oracle_mlp   1.4894  0.6512 |    1.000   0.268   0.644 |  0.1634  0.1259  0.1875   (+8.77% loss)

@@ -1,0 +1,35 @@
+model trained, loss 1.6936
+probe train 16384 positions, test 16384, error rate 0.371
+
+probe                                         test AUROC
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:330: RuntimeWarning: divide by zero encountered in matmul
+  grad[:n_features] = X.T @ grad_pointwise + l2_reg_strength * weights
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:330: RuntimeWarning: overflow encountered in matmul
+  grad[:n_features] = X.T @ grad_pointwise + l2_reg_strength * weights
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:330: RuntimeWarning: invalid value encountered in matmul
+  grad[:n_features] = X.T @ grad_pointwise + l2_reg_strength * weights
+entropy alone (logistic)                          0.8580
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:200: RuntimeWarning: divide by zero encountered in matmul
+  raw_prediction = X @ weights + intercept
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:200: RuntimeWarning: overflow encountered in matmul
+  raw_prediction = X @ weights + intercept
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:200: RuntimeWarning: invalid value encountered in matmul
+  raw_prediction = X @ weights + intercept
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+entropy + maxprob (logistic)                      0.8613
+entropy + maxprob (MLP)                           0.8663
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:330: RuntimeWarning: divide by zero encountered in matmul
+  grad[:n_features] = X.T @ grad_pointwise + l2_reg_strength * weights
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:330: RuntimeWarning: overflow encountered in matmul
+  grad[:n_features] = X.T @ grad_pointwise + l2_reg_strength * weights
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:330: RuntimeWarning: invalid value encountered in matmul
+  grad[:n_features] = X.T @ grad_pointwise + l2_reg_strength * weights
+u alone (logistic)                                0.5729
+MLP on pre-head state o (128d)                    0.8033
+MLP on o + ||e|| + u                              0.8092
+MLP on o + ||e|| + u + entropy + maxprob          0.8536

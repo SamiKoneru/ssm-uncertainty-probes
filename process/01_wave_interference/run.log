@@ -1,0 +1,29 @@
+Building stochastic process (deterministic runs + random steps)...
+Model: unitary complex-diagonal SSM, 9,928 params
+
+Training (a few minutes on CPU)...
+  step  500  loss 1.0192
+  step 1000  loss 1.0375
+  step 1500  loss 1.0186
+  step 2000  loss 0.9969
+
+Evaluating signals...
+
+=== AUROC: does the signal predict per-step ERROR? (0.5=useless, 1=perfect) ===
+  state_magnitude (OURS)      AUROC = 0.733
+  output_entropy              AUROC = 0.424
+  softmax_uncertainty         AUROC = 0.493
+
+=== KEY TEST: on CONFIDENT steps, does state magnitude separate wrong from right? ===
+  confident-and-wrong steps: 6987    confident-and-right steps: 5883
+  state_magnitude AUROC on confident-only steps = 0.756
+  (>0.6 here = magnitude catches errors entropy is blind to. THIS is the claim.)
+
+======================================================================
+HOW TO READ THIS:
+- If state_magnitude AUROC >> output_entropy AUROC: the readout is real.
+- If they're about equal: the state signal is redundant with entropy.
+  (the likely outcome -- and an honest negative result worth knowing.)
+- The KEY TEST (confident-only AUROC) is the decisive one: does magnitude
+  catch confidently-wrong steps that entropy, by definition, cannot flag?
+======================================================================

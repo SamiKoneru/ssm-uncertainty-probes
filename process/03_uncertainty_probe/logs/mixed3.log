@@ -1,0 +1,12 @@
+beta columns labelled by class of x_{t-1}, the WRITE key
+
+     gate     loss     acc |               acc by class |           mean beta by class
+                           |   STABLE    NOISY  REVISED |   STABLE    NOISY   REVISED
+     none   1.6330  0.6347 |    0.806    0.618    0.604 |   0.3880   0.3890    0.3887
+     both   1.5888  0.6311 |    0.804    0.611    0.599 |   0.0763   0.2385    0.2064
+         (gate a = +0.9544, b = -0.2097, a2 = -1.4035)
+      mlp   1.5531  0.6415 |    0.814    0.622    0.616 |   0.0443   0.1617    0.1356
+         (gate a = +0.0000, b = +0.0000)
+
+class is randomised PER SEQUENCE, so the token carries no class info:
+gate='none' CANNOT vary beta by class. Any spread in its beta columns is noise.

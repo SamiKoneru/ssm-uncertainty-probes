@@ -1,0 +1,46 @@
+# wave_ssm
+
+Started as: *can an SSM's internal state provide an uncertainty signal that beats
+output entropy?* The answer is **no**, for a structural reason. A write-gating
+mechanism fell out of the machinery built to ask it, and that part works.
+
+```
+gated_delta_ssm/     THE ARCHITECTURE - clean, runnable, self-contained
+process/             how it was arrived at, and three negative results
+```
+
+## The architecture
+
+A DeltaNet layer whose write strength `beta` can see what the memory already
+holds at the address being written, via two scalars the delta rule computes
+anyway. **~5.5% loss reduction, +1.2pp accuracy, zero extra state, ~0.9% FLOPs**,
+replicated across 3 seeds. See `gated_delta_ssm/README.md`.
+
+It is **prior art** - Miras 2504.13173, CARVE 2606.27229, and variable-step-size
+LMS from the late 1980s. Verified by reading the equations. Treat it as a clean
+reference implementation, not a contribution.
+
+## Why the original question is closed
+
+Cross-entropy is a **proper scoring rule**, so training pays the model directly
+to fold every available and useful signal into its posterior, and entropy is a
+one-line readout of that. Any state-derived signal reconstructs a correlate of
+the same quantity through lossier machinery. A gradient-boosted probe over every
+state feature beats entropy by **+0.012 (~2 SE)**, which bounds the whole family.
+
+Three architectures were tried - unitary/wave, two-timescale accumulators,
+delta-rule residual - and all three land in the same place.
+
+## The three lessons that cost the most
+
+1. **Always report a raw-position control.** Phase 01's headline result (0.733 vs
+   entropy's 0.424) was a clock: raw position `t` alone scored 0.751.
+2. **Always run the gate-off ablation.** Phase 02's signal was 0.577 gated and
+   0.526 ungated - mostly manufactured by the loss, since the gate made it a
+   learned temperature.
+3. **Watch for Simpson's paradox in per-class means.** The key signal separates
+   at AUROC **0.834 within change-writes** and **0.353 pooled**. Reading pooled
+   means led me to build four fixes for a problem that did not exist.
+
+A fourth, meta: **run the novelty check first.** It ran after the engineering,
+and found the mechanism published.

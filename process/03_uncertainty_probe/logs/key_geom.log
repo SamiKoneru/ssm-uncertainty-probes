@@ -1,0 +1,10 @@
+trained, loss 1.6158
+
+configuration                 mean cross-cos    |cos|   capacity ~1/c^2
+  raw learned keys                    0.0701   0.0701             203.3
+  centred (mu removed)               -0.0256   0.0256            1521.3
+  whitened                            0.0000   0.0000             128.0
+  random unit vectors                 0.0884   0.0884             128.0
+
+fraction of key energy in the SHARED MEAN direction: 0.0942
+(40 keys in 128 dims; random-vector baseline cos = 0.0884)

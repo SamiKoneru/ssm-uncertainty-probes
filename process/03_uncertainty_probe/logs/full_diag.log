@@ -1,0 +1,45 @@
+=== kv_model.pt   (v_from_embed=False) ===
+accuracy 1.0000
+
+cosine, v_t  same value token 0.8796   different 0.0096
+cosine, k_t  same task key    0.7968   different 0.6809
+
+residual at n-th write of a STABLE key:
+   #1: 2.6481  (n=4901)
+   #2: 1.0553  (n=3380)
+   #3: 0.8375  (n=1748)
+   #4: 0.7767  (n=683)
+   #5: 0.7441  (n=216)
+   #6: 0.7397  (n=71)
+
+residual at writes: stable 1.7034  contested 2.8403   ratio 1.667x
+
+AUROC (contested key):
+   ORACLE last residual     0.803   stable   1.8881  contested   2.8130
+   ORACLE ema               0.751   stable   2.3447  contested   2.6959
+   superposition accum      0.639   stable   3.2654  contested   4.9541
+   superposition +whiten    0.683   stable   0.0358  contested   0.0550
+
+########################################
+
+=== kv_model_v2.pt   (v_from_embed=True) ===
+accuracy 1.0000
+
+cosine, v_t  same value token 1.0000   different -0.0264
+cosine, k_t  same task key    0.8210   different 0.7243
+
+residual at n-th write of a STABLE key:
+   #1: 9.0216  (n=4901)
+   #2: 3.0305  (n=3380)
+   #3: 2.1891  (n=1748)
+   #4: 1.9627  (n=683)
+   #5: 1.7747  (n=216)
+   #6: 1.9206  (n=71)
+
+residual at writes: stable 5.4625  contested 9.9729   ratio 1.826x
+
+AUROC (contested key):
+   ORACLE last residual     0.827   stable   6.1691  contested   9.8285
+   ORACLE ema               0.786   stable   7.8986  contested   9.3527
+   superposition accum      0.453   stable  11.8368  contested  10.3975
+   superposition +whiten    0.640   stable   0.1318  contested   0.1764

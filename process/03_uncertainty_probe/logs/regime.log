@@ -1,0 +1,8 @@
+24 keys, 90 ops, L=270:
+   step  300  acc 1.000   stable 1.000   contested 1.000
+   step  600  acc 1.000   stable 1.000   contested 1.000
+   step  900  acc 1.000   stable 1.000   contested 1.000
+32 keys, 100 ops, L=300:
+   step  300  acc 0.994   stable 0.996   contested 0.992
+   step  600  acc 1.000   stable 1.000   contested 1.000
+   step  900  acc 1.000   stable 1.000   contested 1.000

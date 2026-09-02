@@ -1,0 +1,10 @@
+trained, a1=+0.979 a2=-1.407
+
+mean beta, split by whether the write is NEW information
+             FIRST write   repeat of stored   changed value   class mean
+  STABLE          0.3315             0.0689          0.5060       0.0938
+  NOISY           0.3334             0.1704          0.2641       0.2525
+  REVISED         0.3329             0.1563          0.3049       0.2258
+
+oracle's per-class constants for reference:  STABLE 0.752  NOISY 0.231  REVISED 0.617
+a per-class gate must use ONE number per row; the learned gate varies within it.

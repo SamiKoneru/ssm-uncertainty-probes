@@ -1,0 +1,22 @@
+  step  500  loss 1.0192
+  step 1000  loss 1.0375
+  step 1500  loss 1.0186
+  step 2000  loss 0.9969
+overall accuracy           : 0.555
+accuracy on DETERMINISTIC  : 0.699   (should be ~1.00)
+accuracy on RANDOM         : 0.124   (chance = 0.125)
+mean entropy det / random  : 0.753 / 0.882  (want det << random)
+fraction of random steps   : 0.250
+
+corr(state_magnitude, position t) = 0.9355
+magnitude at t=10 / t=100 / t=195 : 2.96 / 8.83 / 12.26
+
+--- AUROC for predicting ERROR ---
+  state_magnitude                  0.733
+  raw position t (TRIVIAL CONTROL) 0.751
+  magnitude, position-controlled   0.489   <-- the real number
+
+--- AUROC for predicting 'this step was RANDOM' (the ground truth) ---
+  state_magnitude                  0.488
+  magnitude, position-controlled   0.474
+  output_entropy                   0.582

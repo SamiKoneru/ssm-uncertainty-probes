@@ -1,0 +1,20 @@
+trained, loss 1.6145
+
+mean by class of the WRITE key (seen keys only)
+statistic         STABLE     NOISY   REVISED
+  s1              3.3463    7.5526    6.8235
+  s2              0.6904    0.3956    0.4336
+  memb            0.9209    0.6067    0.6493
+  coh             0.8077    0.5898    0.6013
+
+AUROC, NOISY vs REVISED   (every earlier statistic sat at ~0.5)
+  [all seen writes, n=14220]
+     s1         0.3530  <-- SEPARATES
+     s2         0.6208  <-- SEPARATES
+     memb       0.5691
+     coh        0.5437
+  [CHANGE writes only, n=6397]
+     s1         0.8337  <-- SEPARATES
+     s2         0.1998  <-- SEPARATES
+     memb       0.2007  <-- SEPARATES
+     coh        0.5208

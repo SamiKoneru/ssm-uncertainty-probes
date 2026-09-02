@@ -1,0 +1,17 @@
+    a_init (a1,a2)     loss     acc  a1_final  a2_final   bSTAB   bNOIS    bREV
+    (0, 0) default   1.5882  0.6310    0.9790   -1.4075  0.0748  0.2359  0.2040
+(-1, +1) oracle-ish   1.6295  0.6356   -0.3251   -0.6628  0.4456  0.3930  0.3977
+
+GRADIENT PROBE after training (25 independent batches):
+                 model  param    mean grad        std    t-stat
+        (0, 0) default     a1   -2.815e-02  3.014e-02     -4.67  <- still pushing
+        (0, 0) default     a2    9.798e-03  4.478e-03     10.94  <- still pushing
+   (-1, +1) oracle-ish     a1   -1.759e-02  3.351e-02     -2.63  <- converged
+   (-1, +1) oracle-ish     a2    1.646e-02  4.980e-03     16.53  <- still pushing
+
+CLASS PREDICTABILITY from (s1,s2) per token:
+  3-way accuracy from (s1,s2):  0.6485   (chance 0.5053)
+    AUROC STABLE   vs rest: 0.9317
+    AUROC NOISY    vs rest: 0.8345
+    AUROC REVISED  vs rest: 0.7396
+    AUROC NOISY vs REVISED only: 0.4763   <- the axis that matters

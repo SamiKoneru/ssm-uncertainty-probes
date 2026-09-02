@@ -1,0 +1,10 @@
+final loss 1.134
+
+learned beta: mean 0.2026  (1.0 = exact overwrite, <1 = partial -> blending)
+
+                              STABLE   CONTESTED
+  best-match cosine          -0.0320      0.7479
+  2nd best cosine            -0.0634      0.7175
+  gap (best - 2nd)            0.0314      0.0304
+  ||S q||                     5.5936      3.8285
+  output entropy              0.1030      2.6195

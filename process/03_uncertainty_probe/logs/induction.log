@@ -1,0 +1,28 @@
+   seed0 step 200 loss 1.375
+   seed0 step 400 loss 1.430
+   seed0 step 600 loss 1.318
+
+===== seed 0 =====
+accuracy  all 0.685   stable 0.922   contested 0.236  (ceiling 0.25)
+signal                  AUROC->ERROR   AUROC->CONTESTED
+  u (OURS)                     0.808              0.948
+  output entropy               0.958              0.931
+  1 - max softmax              0.959              0.929
+  position (control)           0.359              0.447
+  [repeat symbols only, n=44056]
+  u (OURS)                     0.910              0.964
+  output entropy               0.944              1.000
+   seed1 step 200 loss 1.278
+   seed1 step 400 loss 1.266
+   seed1 step 600 loss 1.178
+
+===== seed 1 =====
+accuracy  all 0.699   stable 0.927   contested 0.230  (ceiling 0.25)
+signal                  AUROC->ERROR   AUROC->CONTESTED
+  u (OURS)                     0.803              0.947
+  output entropy               0.962              0.936
+  1 - max softmax              0.963              0.934
+  position (control)           0.356              0.446
+  [repeat symbols only, n=44193]
+  u (OURS)                     0.918              0.967
+  output entropy               0.949              1.000
