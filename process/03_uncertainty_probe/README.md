@@ -11,10 +11,10 @@ Two separate investigations live here. The first failed cleanly; the second is
 the actual result.
 
 **Q1: can a delta-rule SSM's write-surprise beat output entropy at predicting
-error?  NO**, and the bound is measured: a gradient-boosted probe over every
-state feature reaches 0.8871 vs 0.8752 for entropy+maxprob (+0.012, ~2 SE).
-Since a trained GBM approximates the best function of those features, that
-bounds the whole family.
+error?  NO**: a gradient-boosted probe over the full pre-head state plus every
+surprise feature and entropy+maxprob reaches 0.8823 test AUROC vs 0.8755 for
+entropy+maxprob alone (+0.007; one model, one seed, no standard error computed).
+On this task the state adds almost nothing beyond entropy.
 
 **Q2: can the write gate `beta` be improved by letting it see the memory?  YES.**
 -5.7% loss, +0.6pp accuracy, ZERO extra state. This is the finding.
@@ -52,9 +52,13 @@ is stored; write softly when it is already there.*
     ---------------------------------------------------------------------
     oracle_class      1.5442   0.6552            3        ZERO   (needs TRUE class labels)
 
-The wide gate **beats the per-class oracle on loss** (5.67% vs 5.42%): it has no
-class information at all, but adapts per token where the oracle is stuck with one
-constant per class. The oracle keeps a 1.4pp ACCURACY edge no feature gate closed.
+The wide gate **roughly matches the per-class oracle on loss** (5.67% vs 5.42%,
+though the gate is a 3-seed mean and the oracle a single run): it has no class
+information at all, but adapts per token where the oracle is stuck with one
+constant per class. The oracle keeps a 1.4pp ACCURACY edge no feature gate closed,
+and an oracle given class labels PLUS the features (`oracle_mlp`) reaches 8.77%,
+so the feature gate recovers roughly 60% of the gain available with perfect class
+knowledge.
 
 Cost detail: `stored_t` is not new work, so we add only two reductions over d_v
 and a tiny MLP. Overhead ~ `1/d_k` of the state update: 0.9% at d_k=128, cheaper
@@ -270,8 +274,8 @@ sys.path header so any of them runs from where it sits.
                          input-only gate PROVABLY cannot differentiate
 
     A_uncertainty/       the original question - CLOSED
-      probe_test.py      *** THE RESULT. GBM over every state feature: 0.8871
-                         vs 0.8752 for entropy+maxprob. Bounds the family.
+      probe_test.py      *** THE RESULT. GBM over state + all features: 0.8823
+                         vs 0.8755 for entropy+maxprob (+0.007).
       induction_run.py   u 0.808 -> error, 0.948 -> contested; entropy 0.958
       complementarity.py corr(u,entropy)=0.62; entropy+u is WORSE than entropy
       revision_run.py    learned beta jumps 0.0022 -> 0.4605 on non-stationary

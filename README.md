@@ -1,4 +1,4 @@
-# wave_ssm
+# ssm-uncertainty-probes
 
 Started as: *can an SSM's internal state provide an uncertainty signal that beats
 output entropy?* The answer is **no**, for a structural reason. A write-gating
@@ -25,8 +25,10 @@ reference implementation, not a contribution.
 Cross-entropy is a **proper scoring rule**, so training pays the model directly
 to fold every available and useful signal into its posterior, and entropy is a
 one-line readout of that. Any state-derived signal reconstructs a correlate of
-the same quantity through lossier machinery. A gradient-boosted probe over every
-state feature beats entropy by **+0.012 (~2 SE)**, which bounds the whole family.
+the same quantity through lossier machinery. A gradient-boosted probe over the
+full pre-head state plus every surprise feature reaches 0.8823 test AUROC against
+0.8755 for entropy+maxprob (**+0.007**, one model and seed), so on this task the
+state adds almost nothing that entropy does not already carry.
 
 Three architectures were tried - unitary/wave, two-timescale accumulators,
 delta-rule residual - and all three land in the same place.

@@ -39,9 +39,32 @@ Real and reproducible: seed sd 0.0006-0.005 against a 0.09 effect. **Saturates a
 width 32** - accuracy is flat from 32 onward and 32->128 buys 0.2pp of loss for
 10x the parameters.
 
-It also **beats a per-class oracle on loss** (5.67% vs 5.42%): a gate with no
-class information outperforms one handed ground-truth labels, because the oracle
-is stuck with one constant per class while this adapts per token.
+It also **roughly matches a per-class oracle on loss** (5.67% vs 5.42%; the gate
+is a 3-seed mean, the oracle a single run): a gate with no class information keeps
+pace with one handed ground-truth labels, because the oracle is stuck with one
+constant per class while this adapts per token. The oracle still wins on accuracy
+(0.655 vs 0.645), and an oracle given the labels plus these features reaches
+8.77%, so this gate recovers roughly 60% of the available gain.
+
+## Controls run after the main result
+
+`compare_carve.py` gives every arm the SAME 32-wide MLP head and varies only the
+gate's input, so a gain cannot come from gate capacity alone:
+
+```
+arm                          gate par  loss mean      sd   vs base
+input-only baseline                 0     1.6325  0.0012     0.00%
+ours: key-side residual         1,217     1.5426  0.0023     5.51%
+CARVE form: query-side          2,433     1.6316  0.0014     0.05%
+CARVE form: key-side            2,433     1.6242  0.0015     0.51%
+```
+
+`ham_and_position.py` checks two ways the result could be an artifact. A
+hand-designed cosine feature through the same MLP head reaches 5.06%, so the
+learned residual is not doing anything a cosine cannot mostly recover. And the
+accuracy gain is spread across the sequence (+0.008 first half, +0.014 second
+half), not concentrated at the end as a burn-in artifact would be. Logs:
+`carve_compare.log`, `ham_pos.log`.
 
 ## Cost
 

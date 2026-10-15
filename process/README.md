@@ -64,10 +64,14 @@ surprise" and "momentary surprise."
 
 ### A_uncertainty/ - entropy wins, and the bound is measured
 
-`probe_test.py` is the result. A gradient-boosted probe over **every** state
-feature reaches 0.8871 against 0.8752 for entropy+maxprob: **+0.012, ~2 SE**.
-Since a trained GBM approximates the best available function of those features,
-that bounds the entire family - no hand-designed statistic will find more.
+`probe_test.py` is the result. A gradient-boosted probe over the full pre-head
+state o plus every surprise feature and entropy+maxprob reaches 0.8823 test AUROC
+against 0.8755 for entropy+maxprob alone: **+0.007** (one trained model, one seed,
+sequence-level split; no standard error computed). An earlier run with the
+surprise features only plus entropy+maxprob reached 0.8871 vs 0.8752
+(`archive/failed_features/address_test.py`). Either way the probe finds almost
+nothing beyond entropy on this task: strong evidence against the family, not a
+proof.
 
 Why, structurally: cross-entropy is a **proper scoring rule**, so training pays
 the model directly to fold every available and useful signal into its posterior,
