@@ -108,3 +108,49 @@ A1.2  04's OWN metric on exactly these rows and this split
   ret = a @ b
 /Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
   ret = a @ b
+
+  feature set                          class AUROC    beta RER
+  3 feats, linear                           0.6788     +0.0064
+  3 feats, GBT                              0.7965     +0.0082
+  5 zero-state, GBT                         0.7956     +0.0096
+  5 zero-state + history, GBT               0.8889     +0.0212
+
+                                       class AUROC    beta RER
+  gain_nonlin                              +0.1178     +0.0018
+  gain_hist                                +0.0934     +0.0116
+  R = hist / nonlin                        +0.7927     +6.4571
+
+  (04 reports R_class = 0.081/0.134 = 0.60 on streams 777/888.)
+
+==============================================================================
+A1.3  R_beta across independent by-sequence splits
+==============================================================================
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: divide by zero encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: overflow encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: invalid value encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: divide by zero encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: overflow encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: invalid value encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: divide by zero encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: overflow encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: invalid value encountered in matmul
+  return X @ coef_ + self.intercept_
+
+    split   gain_nonlin   gain_hist    R_beta
+        0       +0.0018     +0.0116   +6.4571
+        1       -0.0011     +0.0148  -13.8360
+        2       -0.0033     +0.0106   -3.2210
+
+  mean         -0.0009     +0.0123   -3.5333
+  sd           +0.0026     +0.0022  +10.1502
+
+  BARS: R_beta >= 1.00 -> (a)+(b) COLLAPSE;  <= 0.75 -> they SURVIVE;
+        between -> AMBIGUOUS.

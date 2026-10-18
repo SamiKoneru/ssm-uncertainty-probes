@@ -1,0 +1,55 @@
+A3/A4  model gated_seed0 (seed 0)   stream 505   loss 1.6028
+  rows in 04's primary set: 22119
+
+==============================================================================
+A3  is the history gain capacity? five junk features vs five real ones
+==============================================================================
+  all paired on identical rows and the identical by-sequence split.
+
+  comparison                                        base    with    delta      sd  n_test
+  5 zero-state -> + 5 HISTORY (04's claim)        0.8105  0.8940  +0.0835  0.0028   11112
+  5 zero-state -> + 5 JUNK (capacity control)     0.8105  0.7740  -0.0364  0.0069   11112
+  5 zero-state -> + position only (04's control)  0.8105  0.8154  +0.0050  0.0017   11112
+  5 zero-state -> + j_addrconst only              0.8105  0.7730  -0.0375  0.0058   11112
+  5 zero-state -> + j_seqconst only               0.8105  0.7934  -0.0170  0.0037   11112
+  + 5 JUNK -> + 5 JUNK + 5 HISTORY                0.7740  0.8812  +0.1071  0.0057   11112
+
+  BARS: gain_junk >= +0.02 -> (b) WEAKENED, part of the history
+        gain is capacity;  <= +0.01 -> capacity REJECTED.
+  gain_junk = -0.0364  ->  capacity REJECTED
+
+  single-feature AUROC of each junk control (must be ~0.5):
+    j_gauss         0.4997   n 22119
+    j_unif          0.4965   n 22119
+    j_heavy         0.4980   n 22119
+    j_seqconst      0.5477   n 22119
+    j_addrconst     0.4947   n 22119
+    pos             0.5067   n 22119
+
+==============================================================================
+A4.1  is the reported bootstrap SD of the delta honest?
+==============================================================================
+  auroc.py resamples TEST sequences only, with the fitted
+  classifier and the split held fixed. Below: the same delta
+  recomputed across independent by-sequence SPLITS.
+
+  6 splits: delta mean +0.0836   sd across splits 0.0044
+  mean reported bootstrap sd (within one split) 0.0034
+  ratio_sd = 1.29
+  BARS: >= 2.0 UNDERSTATED, <= 1.5 honest
+  -> HONEST
+
+  min/max delta across splits: +0.0766 / +0.0885
+
+==============================================================================
+A4.2  leakage probe: a label drawn independently per (seq, address)
+==============================================================================
+  addresses are recovered from the token stream, not from features;
+  the stream is redrawn from the same seed, so it is the same rows.
+  fake label base rate 0.4853
+  5 zero-state               AUROC 0.5040 +/- 0.0074   |AUROC-0.5| 0.0040   PASS
+  5 zero-state + history     AUROC 0.5034 +/- 0.0087   |AUROC-0.5| 0.0034   PASS
+  history only               AUROC 0.4960 +/- 0.0083   |AUROC-0.5| 0.0040   PASS
+  bar: |AUROC - 0.5| <= 0.02
+
+  for scale, the REAL label through the same code path: 0.8940 +/- 0.0061
