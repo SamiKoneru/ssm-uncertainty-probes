@@ -101,7 +101,13 @@ verdicts hold; the reasons on file do not.
 - the **delta-rule rate memory** did NOT fail from crosstalk. Its logged
   `c_t` AUROC of 0.3690 (`logs/rate.log`) is 0.631 with the sign flipped,
   against an exact crosstalk-free ceiling of 0.681 for the same statistic, so
-  it recovered about 93% of the available separation. It carried the signal and
+  it recovered about half the available separation: 0.513 on one model and 0.481
+  on a second (`../05_audit_volatility`). An earlier version of this note said
+  93%, which was a ratio of raw AUROCs rather than of excess over the 0.5 null;
+  the correct arithmetic on the same two numbers gives 0.723 and the measurement
+  gives 0.51. The shortfall decomposes into roughly 40% from using an EMA rather
+  than an exact per-address mean and only 12 to 21% from superposition
+  crosstalk. It carried the signal and
   still bought 5.12% loss against the plain gate's 4.93%, inside seed noise.
   **The information is not worth much to the loss.** That is a stronger
   negative than "crosstalk ate it", and it is the single most useful result in
@@ -139,7 +145,7 @@ new state.
   learned keys kills signals of this size.**
   CORRECTION (`../04_volatility_history`): too strong, and it rests on the
   cosine 0.68 that `key_geometry.py` later refuted (the shipped model's keys
-  sit at 0.0701). The `C` rate memory kept 93% of its statistic's available
+  sit at 0.0701). The `C` rate memory kept about half of its statistic's available
   separation. Crosstalk is real for the `R` accumulator, where the read happens
   at `q` and not `k`, but it is not a general law about per-key stores here.
 - **Normalised readout** `(R.q)/(Z.q)`: `Z.q` goes negative on 55% of queries.

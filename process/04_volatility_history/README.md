@@ -261,8 +261,17 @@ exact crosstalk-free ceiling measured here:
   h_meane  EXACT   pooled AUROC 0.3189  ->  0.681 flipped                 (this dir)
 ```
 
-**The delta-rule rate memory recovered 0.631 of an available 0.681, about 93% of
-the separation on that axis.** And its loss was 5.12% against the plain feature
+**RETRACTED, see `AUDIT.md`. The "93%" is an arithmetic error of mine and the
+measured figure is about half that.** 0.631/0.681 is a ratio of raw AUROCs, but
+AUROC's null is 0.5, not 0, so the excess-over-chance ratio is
+|0.3690-0.5|/|0.3189-0.5| = **0.723**, and measured properly on one model the
+rate memory recovers **0.513** (0.481 on a second). The conclusion it supported
+still holds and for a better-identified reason: the auditing session decomposes
+the shortfall into roughly 40% from using an EMA rather than an exact per-address
+mean, and only 12 to 21% from superposition crosstalk. So crosstalk was indeed
+not the main culprit, but the mechanism is the discount form, not the store.
+
+Its loss was 5.12% against the plain feature
 gate's 4.93%, a +0.19pp difference inside this repo's own seed sd of 0.0026 to
 0.0039 on loss (0.16 to 0.24% of gain).
 

@@ -277,6 +277,16 @@ input column is finite, and the warnings arise inside LBFGS's line search. The
 measurement holds; the ARGUMENT built on it is still retracted above.
 
 ## What this audit did not check
-- the "rate memory recovered 93%" comparison still crosses models and streams.
-  Settling it needs the `rate_delta` model retrained and measured alongside.
+- ~~the "rate memory recovered 93%" comparison still crosses models and
+  streams.~~ **SETTLED AGAINST ME.** The auditing session retrained the model
+  and measured it: the "93%" is a ratio of raw AUROCs where AUROC's null is 0.5,
+  so the correct excess-over-chance arithmetic on my own two numbers gives
+  **0.723**, and measured on one model the recovery is **0.513** (0.481 on a
+  second). Their decomposition is more informative than my ratio was: of the
+  shortfall, roughly 40% comes from using an EMA rather than an exact
+  per-address mean and only 12 to 21% from superposition crosstalk. So the
+  inference I drew (crosstalk was not what killed the rate memory) survives,
+  but the number I drew it from was wrong and the real mechanism is the discount
+  form. Their figures, not independently reproduced here; the arithmetic error
+  is verifiable directly and is correct.
 - anything about loss.
