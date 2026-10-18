@@ -1,0 +1,24 @@
+input columns on the analysed rows:
+  f_tok    finite True   range [-1.344, 0.4319]
+  f_s1     finite True   range [1.753, 2.439]
+  f_s2     finite True   range [0.07097, 0.6309]
+
+the warnings arise inside the solver, not from the inputs. Does the
+fitted AUROC depend on the solver?
+
+  solver            AUROC   warnings
+  lbfgs            0.6758         30
+  newton-cg        0.6758         27
+  liblinear        0.6758          3
+  saga             0.6758          3
+
+and the nonlinear reads of the SAME three features, for the
+linear-vs-nonlinear comparison the 0.676 is one half of:
+  model                                 AUROC
+  spline basis, 6 knots                0.8065
+  polynomial degree 2                  0.7978
+  gradient-boosted tree                0.8095
+
+NOTE: the +0.134 'free nonlinear headroom' ARGUMENT built on this
+gap is retracted (AUDIT.md RETRACTED 2) because the shipped gate is
+already nonlinear. The MEASUREMENT is what this file checks.

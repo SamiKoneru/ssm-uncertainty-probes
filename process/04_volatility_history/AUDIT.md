@@ -253,6 +253,29 @@ volatility memory would be useless on an address's first couple of writes and
 near-perfect after five, so its value depends entirely on how the task's writes
 are distributed over visit counts, which this directory never reported either.
 
+## Two further hits, from the session auditing this one
+
+Both are fair and both are now fixed here rather than argued with.
+
+**The replay assert does not cover the addressing.** Their mutation test:
+corrupt `addr = tokens[:, t - 1]` to `tokens[:, t]` in `features.py` and the
+assert still PASSES. Of course it does: the bookkeeping is a pure side-channel
+observer that never feeds the logits, so the assert constrains the recurrence
+(k, v, beta, S) and gives zero coverage of the addressing. My docstring put the
+addressing claim and the assert in adjacent paragraphs, which implied the one
+supported the other. Corrected in `features.py`. The addressing itself stands:
+verified three ways in `audit_addressing.py`, and their own independent
+reimplementation of every column agrees to 1.4e-06.
+
+**The `linear 0.676` had solver warnings interleaved into the rows that produce
+it**, visible in the committed `logs/separability_777.log`. I did check this
+during the session and found it solver-independent, but I ran the check inline
+and reported it in conversation only. **A verification that lives in chat
+scrollback is not a verification.** Recorded properly now in
+`audit_linear_solver.py`: all four solvers give 0.6758 to four decimals, every
+input column is finite, and the warnings arise inside LBFGS's line search. The
+measurement holds; the ARGUMENT built on it is still retracted above.
+
 ## What this audit did not check
 - the "rate memory recovered 93%" comparison still crosses models and streams.
   Settling it needs the `rate_delta` model retrained and measured alongside.

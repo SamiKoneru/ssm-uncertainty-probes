@@ -20,6 +20,20 @@ here from bookkeeping, not from the task's `seen` array, whose t-th entry is
 about x_t and so describes the VALUE token rather than the address.
 
 `replay` asserts its own recurrence reproduces the shipped forward pass.
+
+WHAT THAT ASSERT DOES NOT COVER, per a mutation test by the session auditing
+this directory: the bookkeeping is a pure side-channel observer and never feeds
+the logits, so corrupting `addr = tokens[:, t - 1]` to `tokens[:, t]` leaves the
+assert PASSING. The assert constrains the RECURRENCE (k, v, beta, S) and gives
+ZERO coverage of the addressing claim stated above it. Putting the two in
+adjacent paragraphs implied otherwise and that was misleading.
+
+The addressing is nonetheless verified, independently and three ways, in
+`audit_addressing.py`: against the model's own weights forced to identity on a
+one-hot embedding, against a naive per-sequence reimplementation on hand-built
+token streams, and against the task generator's own class assignment. The
+auditing session reimplemented every column a third time and agrees to
+1.4e-06.
 """
 import os
 import sys
