@@ -1,0 +1,8 @@
+9 reps x 3 steps, batch 24, 2 threads, alternating inside one process
+
+configuration                       median s/step      min      max   vs no-bookkeeping
+none                                        0.963    0.932    1.009               -5.1%
+gate, no bookkeeping (n_hist=0)             1.015    0.969    1.105               +0.0%
+gate + bookkeeping (n_hist=5)               1.082    1.032    1.128               +6.6%
+
+load average now: 4.95 4.79 15.62

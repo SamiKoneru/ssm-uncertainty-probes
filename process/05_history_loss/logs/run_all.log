@@ -1,0 +1,7 @@
+done none_seed0: RESULT {"arm": "none", "seed": 0, "secs": 2206.8, "params": 62058, "clamp": 0.0}
+done ours_seed0: RESULT {"arm": "ours", "seed": 0, "secs": 2297.9, "params": 62250, "clamp": 0.0}
+done ours_rate_seed0: RESULT {"arm": "ours+rate", "seed": 0, "secs": 841.3, "params": 62250, "clamp": 0.0}
+done ours_hist_seed0: RESULT {"arm": "ours+hist", "seed": 0, "secs": 841.6, "params": 62250, "clamp": 0.0}
+done ours_pub_seed0: RESULT {"arm": "ours_pub", "seed": 0, "secs": 479.1, "params": 62058, "clamp": 0.0}
+done ours_oracle_seed0: RESULT {"arm": "ours+oracle", "seed": 0, "secs": 522.6, "params": 62250, "clamp": 0.0}
+SEED 0 COMPLETE

@@ -5,3 +5,8 @@ arm none  seed 0  800 steps  batch 24  2 threads
   step  300  loss 1.8293  910s
   step  400  loss 1.7049  1281s
   step  500  loss 1.7842  1665s
+  step  600  loss 1.8932  1888s
+  step  700  loss 1.6440  2041s
+  step  799  loss 1.6937  2207s
+saved /Users/skon/Desktop/Projects/ssm-uncertainty-probes/.claude/worktrees/sharp-dubinsky-67ebc6/process/05_history_loss/checkpoints/none_seed0.pt   2207s   params 62,058   h_ratio clamp rate 0.000%
+RESULT {"arm": "none", "seed": 0, "secs": 2206.8, "params": 62058, "clamp": 0.0}
