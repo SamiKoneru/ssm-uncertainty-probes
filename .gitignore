@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 .DS_Store
 nohup.out
+process/04_volatility_history/checkpoints/
