@@ -182,11 +182,18 @@ def main():
           f"(from pooled within-arm sd {psd:.4f}, computed not asserted)")
 
     psd_o = pooled_sd(res, "loss")
-    print(f"\nCROSS-CHECK on the primary: pooled within-arm sd {psd_o:.4f} "
-          f"-> implied bar {2 * psd_o * np.sqrt(2 / 3):+.4f} "
-          f"vs the pre-registered {BAR:+.4f}")
-    print(f"  the pre-registered bar is "
-          f"{'CONSERVATIVE (harder to pass)' if BAR >= 2 * psd_o * np.sqrt(2 / 3) else 'OPTIMISTIC: this run was noisier than the prior, so it is UNDERPOWERED'}")
+    if np.isnan(psd_o):
+        print("\nCROSS-CHECK on the primary: not available, needs >1 seed")
+    else:
+        imp = 2 * psd_o * np.sqrt(2 / 3)
+        print(f"\nCROSS-CHECK on the primary: pooled within-arm sd {psd_o:.4f} "
+              f"-> implied bar {imp:+.4f} vs the pre-registered {BAR:+.4f}")
+        print("  the pre-registered bar is "
+              + ("CONSERVATIVE: this run was QUIETER than the prior sd, so the "
+                 "bar is harder to pass than the data requires"
+                 if BAR >= imp else
+                 "OPTIMISTIC: this run was NOISIER than the prior sd, so the "
+                 "test is UNDERPOWERED. Reported, bar NOT moved."))
 
     print("\nVALIDITY GATE: the masked `ours` must reproduce the published effect")
     if "none" in res and "ours" in res:
