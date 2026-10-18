@@ -28,6 +28,7 @@ import auroc as A                                              # noqa: E402
 import beta_optimal as BO                                      # noqa: E402
 import features as FE                                          # noqa: E402
 import task as T                                               # noqa: E402
+import bayes_ceiling as BC                                     # noqa: E402
 
 THREE = ["f_tok", "f_s1", "f_s2"]
 GATEKEY = "the trained gate's own beta"
@@ -128,6 +129,63 @@ def class_auroc_same_rows(d, mk, seqs, split_seed):
     return res
 
 
+BUCKETS = ((1, 1, "1"), (2, 2, "2"), (3, 4, "3-4"), (5, 8, "5-8"),
+           (9, 10 ** 9, "9+"))
+
+
+def visit_crosstab(d, mk, seqs, out, te, b_const, llr, lab):
+    """Where beta's LEVERAGE sits, against where history can identify the class.
+
+    04's session found Bayes identifiability rises steeply with prior visits
+    (0.69 at one prior write to 0.9997 at nine or more). That only matters for
+    beta if the writes where beta has LEVERAGE live at the same visit counts.
+    A_t = ||e_t||^2 is that leverage, so the two can be crossed directly.
+    """
+    Aa, Bb, Cc = d["A"][mk], d["B"][mk], d["C"][mk]
+    nv = d["h_nvis"][mk]
+    wt = d["wtype"][mk]
+    At, Bt, Ct, nvt, wtt = Aa[te], Bb[te], Cc[te], nv[te], wt[te]
+    ltr = llr[mk][te]
+    ytr = lab[mk][te]
+    tot_lev = Aa.sum()
+    base_all = BO.err(At, Bt, Ct, b_const).mean()
+
+    print(f"\n  {'prior':>7}{'rows':>8}{'share of':>10}{'mean':>9}"
+          f"{'Bayes':>8}{'hist gain':>11}{'hist gain':>11}")
+    print(f"  {'visits':>7}{'':>8}{'leverage':>10}{'||e||':>9}"
+          f"{'AUROC':>8}{'beta RER':>11}{'x leverage':>11}")
+    rows = []
+    for lo, hi, nm in BUCKETS:
+        sel_all = (nv >= lo) & (nv <= hi)
+        sel = (nvt >= lo) & (nvt <= hi)
+        if sel.sum() < 30:
+            continue
+        lev = Aa[sel_all].sum() / tot_lev
+        au = (roc_auc_score(ytr[sel], ltr[sel])
+              if len(np.unique(ytr[sel])) > 1 else float("nan"))
+        # the same globally fitted policies, scored inside this bucket only
+        e5 = BO.err(At[sel], Bt[sel], Ct[sel],
+                    out["5 zero-state, GBT"][2][sel]).mean()
+        eh = BO.err(At[sel], Bt[sel], Ct[sel],
+                    out["5 zero-state + history, GBT"][2][sel]).mean()
+        gh = (e5 - eh) / base_all
+        print(f"  {nm:>7}{int(sel.sum()):>8}{lev:>10.4f}"
+              f"{np.sqrt(At[sel]).mean():>9.4f}{au:>8.4f}{gh:>+11.5f}"
+              f"{gh * lev:>+11.5f}")
+        rows.append((nm, lev, au, gh))
+    print("\n  'hist gain beta RER' is history's beta-error reduction inside\n"
+          "  that bucket, as a fraction of the SAME global best-constant\n"
+          "  baseline, so the column is additive across buckets.")
+
+    print(f"\n  and the same leverage split by write type:")
+    for nm, code in (("repeat", FE.REPEAT), ("change", FE.CHANGE)):
+        s_ = wt == code
+        print(f"    {nm:8s} rows {int(s_.sum()):>7}  "
+              f"share of leverage {Aa[s_].sum() / tot_lev:>7.4f}  "
+              f"mean ||e|| {np.sqrt(Aa[s_]).mean():>8.4f}")
+    return rows
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stream", type=int, default=505)
@@ -145,9 +203,20 @@ def main():
     print(f"  model loss on this stream {d['_loss']:.4f}")
     seqs = d["seq"]
 
+    # the Bayes LLR, on the same rows. Both collectors draw from
+    # default_rng(stream) with the same batch loop, so the flattened row order
+    # is identical; asserted rather than assumed.
+    bc = BC.collect(a.stream, batches=a.batches)
+    assert np.array_equal(bc["cls_w"].astype(int), d["cls_w"]), "row mismatch"
+    assert np.array_equal(bc["wtype"].astype(int), d["wtype"].astype(int)), \
+        "wtype mismatch"
+    llr = bc["llr"]
+    lab_all = (d["cls_w"] == 2).astype(int)
+
     seen = d["wtype"] != FE.UNSEEN
     nr = np.isin(d["cls_w"], [1, 2])
     mk = seen & nr & d["valid"]
+    lab = lab_all
 
     hdr("A1.4  how good is the optimal-beta proxy itself?")
     print("  The target v_next assumes the content written at address\n"
@@ -221,6 +290,10 @@ def main():
         print(f"    the trained gate's actual beta           {actual:>+10.4f} RER")
         print(f"    gap the gate leaves on its own features  "
               f"{best3 - actual:>+10.4f}")
+
+        if rows is mk:
+            hdr("A1.5  does history identify the class WHERE beta has leverage?")
+            visit_crosstab(d, rows, seqs, out, te, b_const, llr, lab)
 
         co = out["TRUE CLASS LABEL (oracle)"][0]
         den = co - out["5 zero-state, GBT"][0]
