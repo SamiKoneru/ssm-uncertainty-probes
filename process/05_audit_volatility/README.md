@@ -275,13 +275,17 @@ model so every arm sees the identical `e_t` sequence:
 ```
 
 **Recovered: 0.513, not 0.93.** The pre-registered bar (`<= 0.70` fails) fires
-on both masks (0.513 correct mask, 0.578 with `rate_test.py`'s own mask).
+on both masks (0.513 correct mask, 0.578 with `rate_test.py`'s own mask) and on
+a second model (seed 1: `h_meane` 0.2992, `h_ema` 0.3782, `c_t` 0.4035,
+recovered **0.481**).
 
 **The decomposition is the useful part:**
 
 ```
-  exact MEAN -> exact EMA   (the EMA form)   0.586 recovered   the EMA costs 41%
-  exact EMA  -> superposed  (CROSSTALK)      0.875 recovered   crosstalk costs 12%
+                                           seed 0   seed 1
+  exact MEAN -> exact EMA  (the EMA form)    0.586    0.607   the EMA costs ~40%
+  exact EMA  -> superposed (CROSSTALK)       0.875    0.792   crosstalk costs 12-21%
+  exact MEAN -> superposed (BOTH)            0.513    0.481
 ```
 
 So **04's inference is right and its magnitude is wrong.** Crosstalk really was
