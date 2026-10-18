@@ -1,0 +1,2 @@
+arm ours+bayes  seed 0  800 steps  batch 24  2 threads
+  step    0  loss 3.8208  3s

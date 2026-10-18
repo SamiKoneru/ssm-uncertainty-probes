@@ -7,3 +7,16 @@ done ours_oracle_seed0: RESULT {"arm": "ours+oracle", "seed": 0, "secs": 522.6, 
 SEED 0 COMPLETE
 done none_seed1: RESULT {"arm": "none", "seed": 1, "secs": 578.3, "params": 62058, "clamp": 0.0}
 done ours_seed1: RESULT {"arm": "ours", "seed": 1, "secs": 629.0, "params": 62250, "clamp": 0.0}
+done ours_rate_seed1: RESULT {"arm": "ours+rate", "seed": 1, "secs": 541.7, "params": 62250, "clamp": 0.0}
+done ours_hist_seed1: RESULT {"arm": "ours+hist", "seed": 1, "secs": 541.9, "params": 62250, "clamp": 0.0}
+done ours_pub_seed1: RESULT {"arm": "ours_pub", "seed": 1, "secs": 486.6, "params": 62058, "clamp": 0.0}
+done ours_oracle_seed1: RESULT {"arm": "ours+oracle", "seed": 1, "secs": 513.8, "params": 62250, "clamp": 0.0}
+SEED 1 COMPLETE
+done none_seed2: RESULT {"arm": "none", "seed": 2, "secs": 444.1, "params": 62058, "clamp": 0.0}
+done ours_seed2: RESULT {"arm": "ours", "seed": 2, "secs": 488.6, "params": 62250, "clamp": 1e-06}
+done ours_hist_seed2: RESULT {"arm": "ours+hist", "seed": 2, "secs": 488.0, "params": 62250, "clamp": 0.0}
+done ours_rate_seed2: RESULT {"arm": "ours+rate", "seed": 2, "secs": 488.4, "params": 62250, "clamp": 0.0}
+done ours_pub_seed2: RESULT {"arm": "ours_pub", "seed": 2, "secs": 1425.9, "params": 62058, "clamp": 0.0}
+done ours_oracle_seed2: RESULT {"arm": "ours+oracle", "seed": 2, "secs": 1587.7, "params": 62250, "clamp": 0.0}
+SEED 2 COMPLETE
+ALL_RUNS_DONE
