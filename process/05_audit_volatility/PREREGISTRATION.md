@@ -382,3 +382,120 @@ read three ways - 04's `_clean` path as shipped, a rank/quantile transform, and
   0.676.
 - Reported either way, with the warning census, because a silent overflow in a
   published number is worth recording whatever it does to the headline.
+
+---
+
+# APPENDED 2026-10-18, after 04's own AUDIT.md arrived
+
+Nothing above was edited. 04's session sent its `AUDIT.md` (branch
+`claude/optimistic-easley-09c6ab`, commits `6afab85`, `cc7cb22`) after my
+original was committed. It retracts claim (b), downgrades the 0.61 -> 0.81
+separability figure to a bug artifact, and concedes claim (c) does not
+discriminate. Its own closing position is now: "the separability evidence
+establishes that a real but bounded information gap exists, and does NOT
+establish that closing it is worthless."
+
+## Status of my original bars under those retractions
+
+I am not moving any bar. For the record:
+
+- **A1's primary bar `R_beta = gain_hist / gain_nonlin` has lost its
+  claimant.** `gain_nonlin` is the linear-to-nonlinear gap of claim (b), which
+  04 has now retracted on exactly the grounds I recorded independently as A8.
+  I will still REPORT `R_beta` as pre-registered, but it no longer decides
+  anything, and I am not substituting a new ratio for it.
+- **A1's `share_hist` bar and ALL of A1b's loss bars stand unchanged.** They
+  were pre-registered with absolute thresholds (`share_hist >= 0.75` / `<=
+  0.40`; `g_hist >= 0.0039` / `<= 0.0013` nats against the repo's own seed sd)
+  and neither depends on claim (b). These are now the live tests.
+- **A3, A4 and A2 overlap work 04 has since done independently.** I keep them:
+  my `j_addrconst` control (one draw per sequence AND address) is not among
+  04's five random features or its per-sequence constant, and it is the one
+  that matches a per-address volatility memory's grouped structure exactly.
+- **A9 is demoted to a reported anomaly**, since the linear read it questions
+  is only load-bearing for the retracted (b).
+
+## A10 - is the ~0.92 ceiling real? The exact Bayes bound
+
+04's AUDIT.md lists this as unchecked: "whether the ORACLE feature set is a
+sufficient statistic for the per-address history ... the true Bayes ceiling
+given the full value multiset was not computed, so 0.92 is a measured ceiling
+for these features, not a proof."
+
+It matters because 04 used ~0.92 to argue the per-class oracle gap is partly
+unreachable in principle: "At L=256 the class label is only partly recoverable
+from per-address history at all."
+
+It is exactly computable, with no model and no classifier. At an address `s`
+the value sequence written there is the sequence of successors `s` emits, and
+the generative process at `s` advances only when `s` is visited, so that value
+sequence is a sufficient statistic for `class(s)`.
+
+**where:** `v_1..v_n` are the values written at this address up to and including
+the current write (the same information set `o_memb` and `o_ndist` use);
+`p = P_REV = 0.35`; `N = N_SYM = 40`; `K = N_OPT = 4`; `k` = number of distinct
+values among `v_1..v_n`; `c_j` = count of the `j`-th distinct value.
+
+    REVISED  succ starts Uniform(N), and after each emission is redrawn with
+             probability p. So consecutive values agree with probability
+             (1-p) + p/N and disagree, to any particular other symbol, with
+             probability p/N:
+
+      L_REV = (1/N) * prod_{i=2..n} [ (1-p) + p/N ]^{1[v_i = v_{i-1}]}
+                                    * [ p/N ]^{1[v_i != v_{i-1}]}
+
+    NOISY    the option multiset is K iid Uniform(N) draws, and each visit
+             emits one of the K slots uniformly. Marginalising over the
+             unobserved option multiset, with m_j the multiplicity of the j-th
+             distinct observed value and r = K - sum m_j:
+
+      L_NOISY = sum over {m_j >= 1, sum m_j <= K}
+                  [ K! / (prod m_j! * r!) ] * (N-k)^r / N^K
+                  * prod_j (m_j / K)^{c_j}
+
+             and L_NOISY = 0 whenever k > K, since more than K distinct values
+             cannot come out of a K-slot option set.
+
+The score is `LLR = log L_REV - log L_NOISY`, and its AUROC over NOISY vs
+REVISED on 04's own row set is the true Bayes ceiling for this information set.
+
+**Self-tests that must pass before the AUROC is reported** (a wrong likelihood
+would silently produce a confident number):
+
+- normalisation: for `n = 1` and `n = 2`, `sum over all N^n value sequences` of
+  `L_c` equals 1 for each class, to `< 1e-9`.
+- Monte Carlo: simulate the per-address process directly and compare empirical
+  sequence frequencies against `L_c` for all sequences up to `n = 3`, to within
+  Monte Carlo error.
+
+**Bars:**
+
+- **~0.92 is NOT a real ceiling** if the Bayes LLR alone reaches `>= 0.95`
+  AUROC on 04's primary row set. 04's "only partly recoverable" argument then
+  fails, and the headroom above the gate's features is larger than 04 reported.
+- **~0.92 IS about right** if the Bayes LLR lands within `0.02` of 0.92
+  (i.e. `<= 0.94`), which would confirm the oracle features are near-sufficient
+  and make 0.92 a genuine property of the task.
+- **AMBIGUOUS** between 0.94 and 0.95.
+- Reported either way, with `k > K` rows (where NOISY is logically impossible)
+  counted separately, since those are free wins the feature-based oracle has no
+  way to express.
+
+## A11 - audit 04's audit
+
+04 asks for this explicitly and says AUDIT.md's own numbers have had no
+independent check. Two of its numbers are load-bearing for its retractions, so
+I recompute them from scratch on my own retrained models and my own stream:
+
+- **A11.1** the signinit replay bug. 04 claims the correct replay of its
+  `gate="both"` legacy model gives `[s1,s2]` 0.7787 against the buggy 0.6161,
+  and that the corrected three-gate trend is 0.791 / 0.812 / 0.837 rather than
+  0.616 / 0.810 / 0.837. **Bar: my independently trained legacy model's
+  corrected figure within 0.03 of 0.779, and the buggy replay within 0.03 of
+  0.616.** Outside that, one of us is wrong and I say which.
+- **A11.2** `gate_capacity.py`'s third row, `zero-state + exact history` MLP
+  0.9017, which is what makes claim (c) non-discriminating. **Bar: within 0.02
+  on my own seed-0 model.**
+- **A11.3** the claim that the signinit bug is not systemic (five other files
+  share the pattern but train `gate="none"`, for which it is correct).
+  Verified by reading, reported as pass/fail per file.
