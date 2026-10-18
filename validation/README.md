@@ -85,8 +85,116 @@ opposite ordering to ours on real language data.
 
 ## Results
 
-Not yet in. Logs land here as `*.log`, tracked, same convention as the rest of
-the repo.
+### CHECK A and CHECK B: both pass (`convergence.log`)
+
+3 arms x 3 lrs x 2 seeds, 3000 steps, each arm at its own best lr (1e-3 for
+all three, not the published 2e-3).
+
+```
+none        1.6272
+ours        1.5309   +5.92%
+token_only  1.6249   +0.14%     recovers 2.6% of the effect
+```
+
+The gap does not close with training, it WIDENS: 5.22% at 500 steps to 5.92%
+at 3000. `none` plateaus by step 1000 while `ours` is still descending, so the
+convergence-transient worry was backwards. Caveat: `ours` had not converged at
+3000, so this shows the gap is not closing BY 3000, not that it survives to
+the asymptote.
+
+### CONFIRMED on fresh eval streams (`eval_stream.log`)
+
+The first confirmation in this project's history. Published protocol exactly,
+no retuning, scored on 5 streams never used for any decision here.
+
+```
+gap vs none      12345      202      303      404      505      606
+ours              5.52     5.41     5.60     5.79     5.38     5.26
+token_only       -0.01    -0.01     0.01     0.00     0.00    -0.02
+
+ours        canonical +5.52%   fresh mean +5.49%  sd 0.21  range [+5.26, +5.79]
+BAR 1 canonical inside fresh range   PASS
+BAR 2 fresh mean >= 4.00%            PASS
+KILL  canonical is best stream       no, best is 404
+```
+
+Absolute difficulty swings a lot by stream (`none` ranges 1.5377 to 1.7194,
+0.18 of loss) while the GAP holds inside 0.53 points. So the headline is not a
+property of the one sample this project has been staring at.
+
+Note `token_only` is a dead zero here (-0.01%) where `convergence.py` found
++0.14% at 3000 steps. The small capacity term **does not reproduce at 800
+steps**, which weakens that exploratory sub-finding further.
+
+### MQAR: a gain on an unconstructed task, far larger, with a failure mode
+
+`mqar_sweep.log`, 3 seeds, eval stream 101 (dims were selected on 12345, so
+scoring moved off it).
+
+```
+  dim  variant         arm     loss      sd     acc      sd  vs none
+   16    plain        none   2.6129  0.0220  0.3671  0.0057    0.00%
+   16    plain        ours   3.0220  0.3968  0.2757  0.0800  -15.66%
+   16    plain  token_only   2.5916  0.0130  0.3740  0.0040    0.81%
+   16  rewrite        none   2.9247  0.0158  0.3019  0.0061    0.00%
+   16  rewrite        ours   2.7516  0.0150  0.2941  0.0016    5.92%
+   16  rewrite  token_only   2.9056  0.0157  0.3025  0.0069    0.65%
+   32    plain        none   0.2984  0.0160  0.9411  0.0041    0.00%
+   32    plain        ours   0.1806  0.0626  0.9583  0.0160   39.48%
+   32    plain  token_only   0.2803  0.0112  0.9442  0.0028    6.06%
+   32  rewrite        none   0.5761  0.0246  0.8542  0.0093    0.00%
+   32  rewrite        ours   0.2546  0.0168  0.9290  0.0071   55.81%
+   32  rewrite  token_only   0.5302  0.0133  0.8634  0.0062    7.98%
+```
+
+**MY PRE-REGISTERED PREDICTIONS WERE MOSTLY WRONG.** Recorded as stated:
+
+1. "plain ... Expect NO gain. This is the honest null." **WRONG.** dim 32 plain
+   gives +39.48%.
+2. "rewrite ... Also expect little gain." **WRONG.** dim 32 rewrite gives
+   +55.81%, the largest in the sweep.
+3. "any gain appears with capacity pressure and not otherwise." Right in
+   direction, **wrong in shape.** I implied monotone ("gain grows as dim
+   falls"). The gain is largest at dim 32 and collapses at dim 16.
+
+Why 1 and 2 were wrong, and it exposes an inconsistency in the
+pre-registration itself: the null argument was "an exact repeat gives
+e = S k - v = 0 so beta multiplies zero". That holds only for ORTHOGONAL keys.
+Under capacity pressure keys are not orthogonal, `S k` carries crosstalk from
+other addresses, and e is nonzero even for an exact repeat. So the
+"plain is null" clause and the "capacity is the only live axis" clause
+contradict each other in the capacity-limited regime, and I wrote both.
+
+**This explanation is post-hoc and untested.** A direct falsifiable check:
+measure ||e|| on exact repeat writes as a function of state dim. Crosstalk
+predicts it goes to zero at large dim and grows as dim shrinks.
+
+### FAILURE MODE found: dim 16 plain
+
+`ours` is bimodal there, 2 of 3 seeds collapse:
+
+```
+seed 0  loss 2.5642  acc 0.3679     beats the baseline
+seed 1  loss 3.2677  acc 0.2261     collapsed
+seed 2  loss 3.2340  acc 0.2330     collapsed
+```
+
+sd 0.3968 on loss, 18 to 25x every other cell. This is the first regime found
+where the gate actively hurts, and it is a stability failure rather than a
+uniform degradation. Plausibly an over-aggressive write policy learned when
+`e` is large and uninformative everywhere, but that is a guess. Needs
+investigation before any claim about the capacity regime is made.
+
+### Other anomalies
+
+- At dim 16 rewrite, `ours` wins on LOSS (+5.92%) but LOSES on accuracy
+  (0.2941 against 0.3019). Loss and accuracy disagree in direction.
+- `token_only` recovers 11 to 15% of the effect on MQAR (6.06/39.48 and
+  7.98/55.81), against 2.6% on the synthetic task and 0% at 800 steps. The
+  control still separates clearly, but the clean-zero result is
+  task-specific and should not be quoted as general.
+- `ours` at dim 32 plain has sd 0.0626 on loss, roughly 4x the other arms in
+  that cell (seeds 0.1289 / 0.2502 / 0.1628).
 
 ## Audit
 

@@ -1,0 +1,42 @@
+published protocol: 800 steps, lr 0.002, 3 seeds
+streams: 12345 (canonical, reused) + 5 fresh (202, 303, 404, 505, 606)
+
+  none        seed 0 done (12 min)
+  none        seed 1 done (23 min)
+  none        seed 2 done (30 min)
+  ours        seed 0 done (37 min)
+  ours        seed 1 done (45 min)
+  ours        seed 2 done (52 min)
+  token_only  seed 0 done (60 min)
+  token_only  seed 1 done (67 min)
+  token_only  seed 2 done (75 min)
+
+
+LOSS BY EVAL STREAM
+
+arm             12345      202      303      404      505      606
+none           1.6326   1.5377   1.6324   1.7194   1.6915   1.6892
+ours           1.5426   1.4544   1.5409   1.6197   1.6005   1.6003
+token_only     1.6328   1.5379   1.6323   1.7193   1.6915   1.6895
+
+
+GAP VS none, BY STREAM (%)
+
+arm             12345      202      303      404      505      606
+ours             5.52     5.41     5.60     5.79     5.38     5.26
+token_only      -0.01    -0.01     0.01     0.00     0.00    -0.02
+
+
+VERDICT against the pre-registered bars
+
+  ours
+    canonical +5.52%   fresh mean +5.49%  sd 0.21  range [+5.26, +5.79]
+    BAR 1 canonical inside the fresh range: PASS
+    BAR 2 fresh mean >= 4.00%: PASS
+    KILL  canonical is the best stream: no (best is 404)
+
+  token_only
+    canonical -0.01%   fresh mean -0.00%  sd 0.01  range [-0.02, +0.01]
+    BAR 1 canonical inside the fresh range: PASS
+
+total 75 min
