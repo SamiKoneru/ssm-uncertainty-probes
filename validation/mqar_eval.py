@@ -10,8 +10,36 @@ live explanation for that whole disagreement and nothing we have run can
 currently rule it out.
 
 Sweeps the capacity axis, because that is the only thing in plain recall that
-can make write strength depend on the memory rather than the token. See
-mqar_task.py for why `plain` and `rewrite` are both expected to be near-null.
+can make write strength depend on the memory rather than the token.
+
+ORIGINAL PRE-REGISTRATION, WRONG, kept for the record. mqar_task.py predicted
+`plain` and `rewrite` would both be near-null because an exact repeat gives
+e = S k - v = 0, so beta multiplies zero. Measured instead at dim 32: plain
++39.48%, rewrite +55.81%. The argument holds only for ORTHOGONAL keys, and the
+pre-registration contradicted itself by also claiming capacity is the only live
+axis, which is exactly the regime where keys cannot be orthogonal.
+
+SECOND PRE-REGISTRATION, written before running dims 24/48/64/128.
+    With n = 64 distinct key addresses in R^d, orthogonality is a counting
+    question. For n <= d, n mutually orthogonal unit keys EXIST, so the model
+    can drive crosstalk to zero, e to zero on repeats, and beta becomes
+    irrelevant. For n > d it is impossible by pigeonhole, and the Welch bound
+    forces max_{i!=j} |<k_i,k_j>| >= sqrt((n-d)/(d(n-1))):
+
+        d = 128   n <= d   floor 0        predict gain ~ 0
+        d =  64   n = d    floor 0        predict gain ~ 0
+        d =  48   n > d    floor 0.078    predict gain > 0
+        d =  32   n > d    floor 0.126    MEASURED +39% / +56%
+        d =  24   n > d    floor 0.165    predict gain > 0
+        d =  16   n > d    floor 0.218    MEASURED collapse, 2/3 seeds
+
+    So the prediction is a THRESHOLD at d = n = 64, not a monotone trend.
+    Dims 16 and 32 generated this hypothesis; dims 24, 48, 64 and 128 test it.
+
+    KILLS THE EXPLANATION: a substantial gain surviving at d = 128, where the
+    keys CAN be made orthogonal and e CAN be driven to zero on repeats. That
+    would mean the gate is exploiting something other than crosstalk and this
+    whole account is wrong.
 
     python mqar_eval.py --calibrate   # is MQAR learnable at all here?
     python mqar_eval.py               # the sweep
