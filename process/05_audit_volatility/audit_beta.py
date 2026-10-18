@@ -27,8 +27,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import auroc as A                                              # noqa: E402
 import beta_optimal as BO                                      # noqa: E402
 import features as FE                                          # noqa: E402
+import task as T                                               # noqa: E402
 
 THREE = ["f_tok", "f_s1", "f_s2"]
+GATEKEY = "the trained gate's own beta"
 INST, HIST = FE.INST, FE.HIST
 
 
@@ -81,7 +83,7 @@ def fit_eval(d, mk, seqs, split_seed, policies):
     rec("TRUE CLASS LABEL (oracle)",
         np.array([pc.get(int(c), gl) for c in cls[te]]))
     rec("per-write beta* (cheating)", bstar_te)
-    rec("the trained gate's own beta", d["beta"][mk][te])
+    rec(GATEKEY, d["beta"][mk][te])
     return out, tr, te, b_const
 
 
@@ -147,6 +149,27 @@ def main():
     nr = np.isin(d["cls_w"], [1, 2])
     mk = seen & nr & d["valid"]
 
+    hdr("A1.4  how good is the optimal-beta proxy itself?")
+    print("  The target v_next assumes the content written at address\n"
+          "  k = normalize(W_k emb(s)) is what gets read back by\n"
+          "  q = normalize(W_q emb(s)). Those are different learned\n"
+          "  projections of the same token, so the proxy is only as tight as\n"
+          "  their alignment. Per symbol, over the whole vocabulary:")
+    with torch.no_grad():
+        ee = m.embed(torch.arange(T.N_SYM))
+        kk = torch.nn.functional.normalize(m.to_k(ee), dim=-1)
+        qq = torch.nn.functional.normalize(m.to_q(ee), dim=-1)
+        same = (kk * qq).sum(-1)
+        cross = kk @ qq.T
+        offdiag = cross[~torch.eye(T.N_SYM, dtype=bool)]
+    print(f"    cos(k_s, q_s)  same symbol : mean {same.mean():+.4f}  "
+          f"min {same.min():+.4f}  max {same.max():+.4f}")
+    print(f"    cos(k_s, q_r)  different   : mean {offdiag.mean():+.4f}  "
+          f"sd {offdiag.std():.4f}")
+    print(f"    margin (same - mean other) {same.mean() - offdiag.mean():+.4f}")
+    print("  A1b measures actual cross-entropy and so needs none of this; it\n"
+          "  is the validity check on A1's ranking, not on A1b's.")
+
     hdr("A1.0  the leverage that pooled class-AUROC throws away")
     print("  A_t = ||e_t||^2 is how much beta can change the stored content.\n"
           "  Pooled class-AUROC weights every row equally regardless of A_t.")
@@ -186,6 +209,18 @@ def main():
         print(f"  R_beta 95% bootstrap interval "
               f"[{np.percentile(brr, 2.5):+.3f}, "
               f"{np.percentile(brr, 97.5):+.3f}]")
+
+        # (c) says the remaining oracle gap is credit assignment. 04 INFERS
+        # that residually (not information, not capacity). Here it is a
+        # measurement: the gap between the best policy fittable on the gate's
+        # OWN three features and what the trained gate actually does with them.
+        best3 = out["3 feats, GBT"][0]
+        actual = out[GATEKEY][0]
+        print(f"\n  CREDIT-ASSIGNMENT GAP, measured not inferred:")
+        print(f"    best policy on the gate's own 3 features {best3:>+10.4f} RER")
+        print(f"    the trained gate's actual beta           {actual:>+10.4f} RER")
+        print(f"    gap the gate leaves on its own features  "
+              f"{best3 - actual:>+10.4f}")
 
         co = out["TRUE CLASS LABEL (oracle)"][0]
         den = co - out["5 zero-state, GBT"][0]
