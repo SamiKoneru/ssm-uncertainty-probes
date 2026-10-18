@@ -180,8 +180,34 @@ the feature gate's 5.67%. Two findings bear on it:
    values per address, **2.72 vs 2.72**, because a NOISY address makes about 3.3
    distinct draws from 4 options in ~7 visits while a REVISED address makes
    1 + Binomial(7, 0.35) ~ 3.4. The near-label oracle tops out at 0.92, not 1.0.
-2. **The gap is not primarily informational.** `gate_capacity.py` separates
-   "present in the features" from "reachable by a gate-shaped network".
+2. **The gap is neither informational nor architectural. It is credit
+   assignment.** `gate_capacity.py` trains the shipped gate's EXACT shape,
+   `3 -> w -> w -> 1` GELU, directly on the class label as a supervised
+   problem, which removes the "a tree is a stronger learner than the gate"
+   objection while keeping everything else:
+
+   ```
+   feature set                           width      MLP     tree   linear
+   shipped gate features [tok, s1, s2]      32   0.8127   0.8095   0.6760
+                                           128   0.8114
+   all zero-extra-state                     32   0.8146   0.8122   0.7640
+                                           128   0.8112
+   ```
+
+   The gate's own architecture at its own shipped width reaches the full
+   information content, **slightly beating the tree**, and 4x the width adds
+   nothing. So the remaining oracle gap is not that the information is absent
+   (0.81 of a 0.92 near-label ceiling), and not that a `3 -> 32 -> 32 -> 1` MLP
+   cannot represent the required function. What the real gate lacks is the
+   **learning signal**: it only ever sees the downstream language-model
+   gradient, never a class label, and 800 steps of that does not find the
+   function direct supervision finds. That is consistent with
+   `validation/convergence.log`, where `ours` was still descending at step 3000.
+
+   **The actionable lever is therefore the learning signal, not new state and
+   not more width.** An auxiliary loss on the gate, a longer schedule, or a
+   better initialisation are all cheaper than a `d_k x d_v` volatility memory
+   and attack the part that is actually binding. Untested here.
 
 ## Reportable anomalies
 
