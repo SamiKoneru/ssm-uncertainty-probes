@@ -294,6 +294,38 @@ Kwong & Johnston VSS-LMS 1992 | Gao & Xie 2001 | Gollamudi SM-NLMS 1998
 - ~30 distinct 2026 papers modify the delta-rule write gate. Concurrent
   unpublished work is invisible and the base rate is high.
 
+## A BUG IN THIS DIRECTORY, found 2026-10-18 (`../04_volatility_history/AUDIT.md`)
+
+`archive/failed_features/signinit_test.py:88` replays the trained model as
+
+    beta = torch.sigmoid(m.to_b(xc))[..., 0]           # INPUT-ONLY beta
+
+but it trains `gate="both"`, whose gate is `gated_model.py:107`
+
+    beta = sigmoid( W x_t + a1*log1p(||e_t||) + a2*prj_t + b )
+
+and a1, a2 train to about +0.96 and -1.41. So the state its class-predictability
+block accumulates is NOT the trained model's state, and the `(s1,s2)` measured
+off it come from a recurrence that was never trained. There is no assert against
+the model's own forward pass, which is why it survived.
+
+Consequence: **`logs/signinit.log`'s whole "CLASS PREDICTABILITY" block is
+measured on the wrong recurrence**, including the 0.4763 that
+`archive/failed_features/rate_test.py:11` adopted as its pass bar. Corrected,
+that model's `(s1,s2)` carry 0.7787 pooled, and the "the gap to the oracle is
+INFORMATION-limited" reading does not hold even for that model.
+
+**The bug is isolated to that one file.** Six scripts here hand-roll the
+recurrence the same way; five train `gate="none"`, for which
+`sigmoid(to_b(xc))` IS the model's beta, so `A_uncertainty/probe_test.py` (this
+project's headline answer), `address_test.py`, `cosine_test.py`, `s3_test.py`
+and `readout_blend.py` are unaffected. `recurrence_test.py` uses the real MLP
+gate, which is why its 0.834 and 0.353 reproduce on fresh streams.
+
+Lesson, and it is cheap: **any script that re-implements the recurrence outside
+the model must assert its logits match the model's own forward pass.**
+`../04_volatility_history/features.py` does; this file did not.
+
 ## CODE MAP
 
 Shared modules at the top of this directory; experiments under the thread that

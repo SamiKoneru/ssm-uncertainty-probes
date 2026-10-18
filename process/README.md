@@ -121,20 +121,37 @@ Both verified on two fresh eval streams in `04_volatility_history` (0.8073 and
     gets 0.4712 against the logged 0.4763, with all three one-vs-rest AUROCs
     inside 0.002). But it does NOT describe the gate that ships.
 
-    **Separability in (s1,s2) is a property of the TRAINED GATE, not of the
-    task.** Both models over the same three eval streams, pooled over all seen
-    writes, NOISY vs REVISED (`04_volatility_history/logs/model_vs_task.log`):
+    **The 0.476 is the product of a BUG, isolated to that one file.**
+    `signinit_test.py:88` replays the trained model as
+    `beta = torch.sigmoid(m.to_b(xc))`, the INPUT-ONLY beta, but the model it
+    trained is `gate="both"`, whose gate is `gated_model.py:107`
+    `beta = sigmoid(W x + a1*log1p(||e||) + a2*prj + b)` with a1 = 0.96 and
+    a2 = -1.41 after training. So the `S` it accumulates is not the trained
+    model's and the `(s1,s2)` read off it come from a recurrence that was never
+    trained. The file has no assert against the model's own forward pass.
 
-        gate                        loss      (s1,s2) pooled AUROC
-        legacy linear gate="both"  1.5882     0.604 to 0.616
-        shipped MLP 3->32->32->1   1.5428     0.796 to 0.817
+    Same model, same stream, same features, only the replay's beta differing
+    (`04_volatility_history/logs/audit_signinit_bug.log`):
 
-    beta shapes `S`, `S` shapes `(s1,s2)`, so a gate with a differentiated write
-    policy MANUFACTURES a more separable feature distribution for itself. The
-    conclusion signinit drew from 0.476, that the gap to the oracle is
-    information-limited, was right about its own model and is wrong about the
-    shipped one. **The lever is the gate's policy, which improves its own
-    features, not a new memory.**
+        replay                                        [s1,s2]  all five
+        signinit's: beta = sigmoid(W x)                0.6161    0.6581
+        correct:    beta = sigmoid(W x + a1 s1 + ...)  0.7787    0.7910
+
+    So that model's features carry **0.79**, and signinit's conclusion that the
+    gap to the oracle is information-limited was not right about its own model
+    either. The shipped MLP gate carries 0.81, so there IS a small monotone
+    trend in gate quality (0.791 / 0.812 / 0.837 across three gates, exploratory
+    n=3), but it is +0.046, not the +0.19 that `04_volatility_history` first
+    published off the buggy figure.
+
+    **Checked for the same bug elsewhere: it is isolated.** Six files hand-roll
+    the recurrence with `beta = sigmoid(m.to_b(xc))`. Five of them train
+    `gate="none"`, for which that IS the model's beta, so `probe_test.py` (the
+    answer to this project's original question), `address_test.py`,
+    `cosine_test.py`, `s3_test.py` and `readout_blend.py` are all unaffected.
+    `recurrence_test.py` uses the real MLP gate, which is why its 0.834 and
+    0.353 reproduce. `signinit_test.py` is the only one whose replay and whose
+    trained gate disagree.
 
     Independently of all that, the bar built on 0.476 was read with the wrong
     sign. `logs/rate.log` has `rate_delta c_t AUROC = 0.3690` against that 0.476
