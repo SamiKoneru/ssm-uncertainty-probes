@@ -76,6 +76,11 @@ TASK 1 reproduction   each recorded value within +/- 0.04 of my measurement
   0.834 = s1 alone, CHANGE writes         0.8073 / 0.8121    PASS
   0.353 = s1 alone, all seen writes       0.3569 / 0.3589    PASS
   0.476 = 3-way GBM P(REVISED), pooled    0.7133 / 0.7118    FAIL by 0.237
+                                          on the SHIPPED model, and the failure
+                                          was the model, not the procedure:
+          on the LEGACY model it was measured on, 0.4712 vs 0.4763,  PASS
+          with all three one-vs-rest AUROCs inside 0.0020.
+  ALL THREE RECORDED NUMBERS ARE CORRECT. None of them is a bookkeeping error.
 
 TASK 2 primary metric   delta from adding exact per-address history
   bar  PASS >= +0.05 and absolute >= 0.70 / KILL < +0.02 or absolute < 0.60
@@ -94,20 +99,57 @@ close to sufficient" and "history adds nothing" are not the same claim. The
 first is roughly right and the second is false. The recommendation does not rest
 on the premise bar; it rests on the increments and the cost.
 
-### The 0.476 is the one recorded number that is wrong
+### Why the three numbers disagree: two conditionings and two models
 
-`0.834` and `0.353` are the same measurement under two conditionings and both
+`0.834` and `0.353` are the same measurement under two conditionings, and both
 READMEs quote them correctly: `logs/recurrence.log:12,17` has them in one table
 from one run, s1 alone, NOISY vs REVISED, all seen writes 0.3530 and change
 writes only 0.8337. Both reproduce here on two fresh streams.
 
-`0.476` is `logs/signinit.log:17`, and it is a **3-way** gradient-boosted
-classifier's `P(REVISED)`, scored pooled on a token-level split. Replaying that
-exact procedure gives 0.713 and 0.712 here, so the 0.237 gap is not the
-procedure. `legacy_0476.py` tests the remaining factor, the model: signinit
-trained a LINEAR gate, `sigmoid(W x + a1*s1 + a2*s2 + b)`, which reached loss
-1.5882 where the shipped MLP reaches 1.5402, so it writes with a different beta
-and accumulates a different state.
+`0.476` is `logs/signinit.log:17`, a **3-way** classifier's `P(REVISED)` scored
+pooled on a token-level split. Replaying that exact procedure on the SHIPPED
+model gives 0.713, so conditioning alone does not explain it. `legacy_0476.py`
+removes the last factor by training the model signinit actually used, a LINEAR
+gate `sigmoid(W x + a1*s1 + a2*s2 + b)`, and reproduces the whole block:
+
+```
+                           measured   logged    diff
+  3-way accuracy             0.6545   0.6485
+  AUROC STABLE  vs rest      0.9337   0.9317   +0.0020
+  AUROC NOISY   vs rest      0.8365   0.8345   +0.0020
+  AUROC REVISED vs rest      0.7385   0.7396   -0.0011
+  AUROC NOISY vs REVISED     0.4712   0.4763   -0.0051
+```
+
+**So all three recorded numbers are right.** The disagreement is two
+conditionings and two models, and nothing in the repo stated which model each
+number came from.
+
+### The finding that came out of chasing it: the gate manufactures its own signal
+
+Both models, same streams, same 6 batches, same conditioning
+(`logs/model_vs_task.log`):
+
+```
+gate                       loss    s1 pooled    s1 change   (s1,s2) gbm pooled
+legacy linear gate="both" 1.5882   0.487-0.491  0.737-0.752    0.604-0.616
+shipped MLP 3->32->32->1  1.5428   0.349-0.359  0.807-0.812    0.796-0.817
+```
+
+**Separability in `(s1,s2)` is a property of the TRAINED GATE, not of the task.**
+`beta` shapes `S`, `S` shapes `(s1,s2)`, so a gate with a differentiated write
+policy manufactures a more separable feature distribution for itself. The legacy
+gate writes nearly the same beta everywhere (0.075 / 0.236 / 0.204 by class) and
+its features carry 0.61; the shipped gate writes 0.04 on NOISY and REVISED
+repeats, 0.17 and 0.26 on their changes, 0.44 on STABLE repeats, and its
+features carry 0.81.
+
+This is the strongest single argument against the volatility memory, and it is
+also why `signinit_test.py` concluded the gap was "INFORMATION-limited". That
+conclusion was correct about its own model. For the shipped gate it is false,
+and the information arrived because the POLICY improved, with no new state at
+all. A volatility memory would be bolting state onto a problem that a better
+policy dissolves.
 
 Separately, **`logs/signinit.log:15` is a trap**: `AUROC NOISY vs rest: 0.8345`
 is a different contrast from the 0.834 in the READMEs, which is NOISY vs

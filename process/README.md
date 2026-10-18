@@ -116,14 +116,30 @@ Both verified on two fresh eval streams in `04_volatility_history` (0.8073 and
     DIFFERENT contrast and the agreement to three decimals is a coincidence.
   - `archive/failed_features/rate_test.py:11` says "(s1,s2) gets 0.476, i.e.
     chance". That number (`logs/signinit.log:17`) is a 3-way classifier's
-    P(REVISED) scored POOLED, i.e. the conditioning this very lesson says
-    inverts. Replaying the same procedure gives 0.713. Read correctly, (s1,s2)
-    separates the two classes at 0.80 pooled.
+    P(REVISED) scored POOLED. **It is correct for the model it was measured
+    on**, and reproduces to within 0.005 (`04_volatility_history/legacy_0476.py`
+    gets 0.4712 against the logged 0.4763, with all three one-vs-rest AUROCs
+    inside 0.002). But it does NOT describe the gate that ships.
 
-    And the bar built on it was read with the wrong sign. `logs/rate.log` has
-    `rate_delta c_t AUROC = 0.3690` against that 0.476 "chance" reference, and
-    0.369 was taken as the weaker number. It is the stronger one: AUROC is a
-    directional statistic, so |0.369 - 0.5| = 0.131 against |0.476 - 0.5| =
+    **Separability in (s1,s2) is a property of the TRAINED GATE, not of the
+    task.** Both models over the same three eval streams, pooled over all seen
+    writes, NOISY vs REVISED (`04_volatility_history/logs/model_vs_task.log`):
+
+        gate                        loss      (s1,s2) pooled AUROC
+        legacy linear gate="both"  1.5882     0.604 to 0.616
+        shipped MLP 3->32->32->1   1.5428     0.796 to 0.817
+
+    beta shapes `S`, `S` shapes `(s1,s2)`, so a gate with a differentiated write
+    policy MANUFACTURES a more separable feature distribution for itself. The
+    conclusion signinit drew from 0.476, that the gap to the oracle is
+    information-limited, was right about its own model and is wrong about the
+    shipped one. **The lever is the gate's policy, which improves its own
+    features, not a new memory.**
+
+    Independently of all that, the bar built on 0.476 was read with the wrong
+    sign. `logs/rate.log` has `rate_delta c_t AUROC = 0.3690` against that 0.476
+    reference, and 0.369 was taken as the weaker number. It is the stronger one:
+    AUROC is directional, so |0.369 - 0.5| = 0.131 against |0.476 - 0.5| =
     0.024. **The rate memory cleared its own pass bar by 5x and was recorded as
     failing it.** It still bought no loss, which is the real result; see
     `03_uncertainty_probe/README.md`.
