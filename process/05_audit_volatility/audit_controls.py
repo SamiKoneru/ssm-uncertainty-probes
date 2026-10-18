@@ -35,8 +35,8 @@ import sys
 import numpy as np
 import torch
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import _paths                                                  # noqa: F401
 import auroc as A                                              # noqa: E402
 import beta_optimal as BO                                      # noqa: E402
 import features as FE                                          # noqa: E402
@@ -109,8 +109,11 @@ def main():
           "  recomputed across independent by-sequence SPLITS.")
     ds, sds = [], []
     for sd_ in range(a.splits):
+        # n_boot trimmed here only: this loop needs the MEAN reported sd
+        # across splits, which is stable well before 400 resamples, and the
+        # across-split sd does not use the bootstrap at all.
         au_a, au_b, dl, sdb, _ = A.joint_pair(d, mk, INST, INST + HIST, lab,
-                                              seqs, seed=sd_)
+                                              seqs, seed=sd_, n_boot=120)
         ds.append(dl)
         sds.append(sdb)
     ds, sds = np.array(ds), np.array(sds)

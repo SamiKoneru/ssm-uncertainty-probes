@@ -22,8 +22,8 @@ import numpy as np
 import torch
 from sklearn.metrics import roc_auc_score
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import _paths                                                  # noqa: F401
 import auroc as A                                              # noqa: E402
 import beta_optimal as BO                                      # noqa: E402
 import features as FE                                          # noqa: E402

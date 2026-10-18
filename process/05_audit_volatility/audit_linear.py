@@ -14,7 +14,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, QuantileTransformer
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _paths                                                  # noqa: F401
 import auroc as A, features as FE
 
 THREE = ["f_tok", "f_s1", "f_s2"]

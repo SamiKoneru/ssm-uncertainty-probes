@@ -47,8 +47,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import _paths                                                  # noqa: F401
 import auroc as A                                              # noqa: E402
 import features as FE                                          # noqa: E402
 import task as T                                               # noqa: E402

@@ -62,11 +62,9 @@ import torch.nn.functional as F
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-FOUR = os.path.join(os.path.dirname(HERE), "04_volatility_history")
-sys.path.insert(0, FOUR)
-sys.path.insert(0, os.path.join(
-    os.path.dirname(os.path.dirname(HERE)), "gated_delta_ssm"))
+import _paths                                                  # noqa: F401
+HERE = _paths.HERE
+FOUR = _paths.FOUR
 
 import features as FE                                          # noqa: E402
 import task as T                                               # noqa: E402

@@ -29,8 +29,8 @@ import torch
 import torch.nn.functional as F
 from sklearn.metrics import roc_auc_score
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import _paths                                                  # noqa: F401
 import auroc as A                                              # noqa: E402
 import features as FE                                          # noqa: E402
 
@@ -81,7 +81,7 @@ def main():
     print("  pooled AUROC of the gate's own [tok, s1, s2], NOISY vs REVISED,\n"
           "  writes to an address written before, GBT, by-sequence split.")
 
-    def measure(d, seed=0, nboot=2000):
+    def measure(d, seed=0, nboot=1000):
         seen = d["wtype"] != FE.UNSEEN
         nr = np.isin(d["cls_w"], [1, 2])
         mk = seen & nr
