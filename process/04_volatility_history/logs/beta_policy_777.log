@@ -1,0 +1,29 @@
+model gated_seed0   stream 777   loss 1.5786
+
+mean beta by CLASS of the write address x WRITE TYPE
+                         unseen                repeat                change
+            beta  ||e||       n   beta  ||e||       n   beta  ||e||       n
+STABLE      0.270  9.00    1905   0.436  3.17   21492                     -
+NOISY       0.273  9.02    1908   0.043  6.70    3163   0.166  8.29    8148
+REVISED     0.272  9.01    1879   0.037  6.44    6863   0.261  9.18    3602
+
+is beta MONOTONE in s1 = log(1+||e||)?  mean beta by s1 decile
+  all writes t>0  0.997 0.864 0.016 0.022 0.033 0.044 0.062 0.183 0.258 0.304   spearman +0.054
+  repeat writes   0.997 0.997 0.893 0.018 0.017 0.022 0.029 0.037 0.044 0.050   spearman -0.343
+  change writes   0.056 0.077 0.102 0.143 0.213 0.242 0.257 0.269 0.284 0.310   spearman +0.959
+
+  s1 decile EDGES for all writes t>0 (so the deciles above are readable):
+   0.00 0.00 1.53 1.88 1.96 2.01 2.06 2.17 2.28 2.32 2.45
+
+within-stratum spearman(beta, s1), by class and write type:
+  STABLE   repeat  n=21492  spearman -0.625   mean beta 0.436
+  STABLE   change  n=0      -
+  NOISY    repeat  n=3163   spearman +0.639   mean beta 0.043
+  NOISY    change  n=8148   spearman +0.974   mean beta 0.166
+  REVISED  repeat  n=6863   spearman +0.787   mean beta 0.037
+  REVISED  change  n=3602   spearman +0.840   mean beta 0.261
+
+the aggregate fact, restated: beta on seen writes
+  repeat  mean beta 0.3096   mean ||e|| 4.238   mean beta*||e|| 0.1425
+  change  mean beta 0.1951   mean ||e|| 8.565   mean beta*||e|| 1.7454
+  pooled spearman(beta, ||e||) on seen writes: -0.047
