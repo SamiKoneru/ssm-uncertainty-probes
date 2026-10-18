@@ -1,0 +1,128 @@
+stream 5150   training seed 0
+
+=== ours (seed 0) ==========================================
+mean beta by CLASS of the write address x WRITE TYPE
+                       unseen              repeat              change
+         beta    ||e||      nbeta    ||e||      nbeta    ||e||      n
+STABLE      0.377  9.09  1802   0.016  3.29 21754                   -
+NOISY       0.377  9.11  1817   0.044  6.37  2884   0.187  8.36  7623
+REVISED     0.378  9.10  1916   0.035  5.98  7375   0.297  9.39  3789
+
+three-regime check: mean beta by s1 decile, all writes t>0
+  0.024 0.007 0.010 0.015 0.027 0.039 0.061 0.227 0.329 0.359   spearman +0.890
+  decile edges 0.00 0.87 1.43 1.75 1.83 1.92 2.02 2.15 2.30 2.34 2.46
+  regimes: low-s1 0.016   mid 0.030   high-s1 0.305   -> MONOTONE / shape CHANGED
+
+within-stratum spearman(beta, s1) and mean beta
+  STABLE   repeat  n=21754  spearman +0.328   mean beta 0.016
+  STABLE   change  n=0      -
+  NOISY    repeat  n=2884   spearman +0.712   mean beta 0.044
+  NOISY    change  n=7623   spearman +0.947   mean beta 0.187
+  REVISED  repeat  n=7375   spearman +0.752   mean beta 0.035
+  REVISED  change  n=3789   spearman +0.589   mean beta 0.297
+
+=== ours+hist (seed 0) =====================================
+mean beta by CLASS of the write address x WRITE TYPE
+                       unseen              repeat              change
+         beta    ||e||      nbeta    ||e||      nbeta    ||e||      n
+STABLE      0.003  9.05  1802   0.001  8.30 21754                   -
+NOISY       0.003  9.09  1817   0.001  9.02  2884   0.003  9.04  7623
+REVISED     0.003  9.07  1916   0.001  9.01  7375   0.007  9.08  3789
+
+three-regime check: mean beta by s1 decile, all writes t>0
+  0.001 0.002 0.002 0.002 0.003 0.002 0.002 0.002 0.002 0.002   spearman -0.078
+  decile edges 1.89 2.14 2.20 2.23 2.26 2.29 2.30 2.32 2.35 2.39 2.44
+  regimes: low-s1 0.002   mid 0.002   high-s1 0.002   -> MONOTONE / shape CHANGED
+
+within-stratum spearman(beta, s1) and mean beta
+  STABLE   repeat  n=21754  spearman -0.505   mean beta 0.001
+  STABLE   change  n=0      -
+  NOISY    repeat  n=2884   spearman -0.411   mean beta 0.001
+  NOISY    change  n=7623   spearman -0.108   mean beta 0.003
+  REVISED  repeat  n=7375   spearman -0.400   mean beta 0.001
+  REVISED  change  n=3789   spearman -0.107   mean beta 0.007
+
+=== ours+rate (seed 0) =====================================
+mean beta by CLASS of the write address x WRITE TYPE
+                       unseen              repeat              change
+         beta    ||e||      nbeta    ||e||      nbeta    ||e||      n
+STABLE      0.243  9.00  1802   0.022  3.87 21754                   -
+NOISY       0.243  9.00  1817   0.053  6.80  2884   0.153  8.23  7623
+REVISED     0.243  9.00  1916   0.047  6.41  7375   0.265  9.10  3789
+
+three-regime check: mean beta by s1 decile, all writes t>0
+  0.004 0.006 0.020 0.037 0.046 0.052 0.069 0.180 0.235 0.268   spearman +0.974
+  decile edges 0.75 1.07 1.41 1.83 1.95 2.02 2.07 2.16 2.27 2.32 2.45
+  regimes: low-s1 0.005   mid 0.045   high-s1 0.227   -> MONOTONE / shape CHANGED
+
+within-stratum spearman(beta, s1) and mean beta
+  STABLE   repeat  n=21754  spearman +0.989   mean beta 0.022
+  STABLE   change  n=0      -
+  NOISY    repeat  n=2884   spearman +0.746   mean beta 0.053
+  NOISY    change  n=7623   spearman +0.948   mean beta 0.153
+  REVISED  repeat  n=7375   spearman +0.794   mean beta 0.047
+  REVISED  change  n=3789   spearman +0.727   mean beta 0.265
+
+=== ours+oracle (seed 0) ===================================
+mean beta by CLASS of the write address x WRITE TYPE
+                       unseen              repeat              change
+         beta    ||e||      nbeta    ||e||      nbeta    ||e||      n
+STABLE      0.003  8.92  1802   0.001  8.05 21754                   -
+NOISY       0.003  8.98  1817   0.000  8.83  2884   0.002  8.90  7623
+REVISED     0.003  8.93  1916   0.000  8.85  7375   0.006  8.93  3789
+
+three-regime check: mean beta by s1 decile, all writes t>0
+  0.004 0.002 0.002 0.002 0.002 0.001 0.001 0.001 0.001 0.001   spearman -0.438
+  decile edges 1.11 1.93 2.06 2.11 2.18 2.26 2.31 2.39 2.43 2.51 2.65
+  regimes: low-s1 0.003   mid 0.002   high-s1 0.001   -> MONOTONE / shape CHANGED
+
+within-stratum spearman(beta, s1) and mean beta
+  STABLE   repeat  n=21754  spearman -0.747   mean beta 0.001
+  STABLE   change  n=0      -
+  NOISY    repeat  n=2884   spearman -0.865   mean beta 0.000
+  NOISY    change  n=7623   spearman -0.359   mean beta 0.002
+  REVISED  repeat  n=7375   spearman -0.864   mean beta 0.000
+  REVISED  change  n=3789   spearman -0.483   mean beta 0.006
+
+=== ours+bayes (seed 0) ====================================
+mean beta by CLASS of the write address x WRITE TYPE
+                       unseen              repeat              change
+         beta    ||e||      nbeta    ||e||      nbeta    ||e||      n
+STABLE      0.202  9.01  1802   0.026  3.86 21754                   -
+NOISY       0.202  9.03  1817   0.019  7.32  2884   0.104  8.22  7623
+REVISED     0.202  9.00  1916   0.039  6.44  7375   0.317  9.10  3789
+
+three-regime check: mean beta by s1 decile, all writes t>0
+  0.006 0.006 0.033 0.044 0.043 0.048 0.088 0.150 0.195 0.205   spearman +0.678
+  decile edges 0.25 0.94 1.31 1.81 1.95 2.04 2.12 2.19 2.26 2.33 2.61
+  regimes: low-s1 0.006   mid 0.051   high-s1 0.183   -> MONOTONE / shape CHANGED
+
+within-stratum spearman(beta, s1) and mean beta
+  STABLE   repeat  n=21754  spearman +0.647   mean beta 0.026
+  STABLE   change  n=0      -
+  NOISY    repeat  n=2884   spearman -0.314   mean beta 0.019
+  NOISY    change  n=7623   spearman +0.327   mean beta 0.104
+  REVISED  repeat  n=7375   spearman -0.198   mean beta 0.039
+  REVISED  change  n=3789   spearman +0.123   mean beta 0.317
+
+=== ours_pub (seed 0) ======================================
+mean beta by CLASS of the write address x WRITE TYPE
+                       unseen              repeat              change
+         beta    ||e||      nbeta    ||e||      nbeta    ||e||      n
+STABLE      0.271  9.00  1802   0.471  2.97 21754                   -
+NOISY       0.272  9.02  1817   0.044  6.69  2884   0.167  8.30  7623
+REVISED     0.273  9.01  1916   0.036  6.42  7375   0.264  9.19  3789
+
+three-regime check: mean beta by s1 decile, all writes t>0
+  0.997 0.997 0.060 0.020 0.031 0.043 0.059 0.177 0.258 0.305   spearman -0.013
+  decile edges 0.00 0.00 0.04 1.87 1.95 2.00 2.05 2.16 2.28 2.32 2.45
+  regimes: low-s1 0.997   mid 0.043   high-s1 0.247   -> NON-MONOTONE (04 shape held)
+
+within-stratum spearman(beta, s1) and mean beta
+  STABLE   repeat  n=21754  spearman -0.660   mean beta 0.471
+  STABLE   change  n=0      -
+  NOISY    repeat  n=2884   spearman +0.670   mean beta 0.044
+  NOISY    change  n=7623   spearman +0.973   mean beta 0.167
+  REVISED  repeat  n=7375   spearman +0.801   mean beta 0.036
+  REVISED  change  n=3789   spearman +0.855   mean beta 0.264
+

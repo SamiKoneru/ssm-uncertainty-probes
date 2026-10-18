@@ -1,2 +1,12 @@
 arm ours+bayes  seed 1  800 steps  batch 24  2 threads
   step    0  loss 3.9003  3s
+  step  100  loss 1.5712  277s
+  step  200  loss 1.7287  474s
+  step  300  loss 1.3707  706s
+  step  400  loss 1.5453  957s
+  step  500  loss 1.2841  1175s
+  step  600  loss 1.4507  1401s
+  step  700  loss 1.5270  1533s
+  step  799  loss 1.7032  1689s
+saved /Users/skon/Desktop/Projects/ssm-uncertainty-probes/.claude/worktrees/sharp-dubinsky-67ebc6/process/05_history_loss/checkpoints/ours_bayes_seed1.pt   1689s   params 62,282   h_ratio clamp rate 0.000%
+RESULT {"arm": "ours+bayes", "seed": 1, "secs": 1689.0, "params": 62282, "clamp": 0.0}
