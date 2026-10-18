@@ -109,6 +109,25 @@ SIMPSON'S PARADOX that invalidated four of my own proposals:
     s1 separates the two hard key classes at AUROC 0.834 on CHANGE writes
                                        and at AUROC 0.353 POOLED
 
+Both verified on two fresh eval streams in `04_volatility_history` (0.8073 and
+0.8121 on change writes, 0.3569 and 0.3589 pooled). Two traps around them:
+
+  - `logs/signinit.log:15` reads `AUROC NOISY vs rest: 0.8345`. That is a
+    DIFFERENT contrast and the agreement to three decimals is a coincidence.
+  - `archive/failed_features/rate_test.py:11` says "(s1,s2) gets 0.476, i.e.
+    chance". That number (`logs/signinit.log:17`) is a 3-way classifier's
+    P(REVISED) scored POOLED, i.e. the conditioning this very lesson says
+    inverts. Replaying the same procedure gives 0.713. Read correctly, (s1,s2)
+    separates the two classes at 0.80 pooled.
+
+    And the bar built on it was read with the wrong sign. `logs/rate.log` has
+    `rate_delta c_t AUROC = 0.3690` against that 0.476 "chance" reference, and
+    0.369 was taken as the weaker number. It is the stronger one: AUROC is a
+    directional statistic, so |0.369 - 0.5| = 0.131 against |0.476 - 0.5| =
+    0.024. **The rate memory cleared its own pass bar by 5x and was recorded as
+    failing it.** It still bought no loss, which is the real result; see
+    `03_uncertainty_probe/README.md`.
+
     REVISED = 65% repeats (e~0) + 35% changes to genuinely NOVEL values
     NOISY   = ~all changes, but to values ALREADY in the stored set
 
