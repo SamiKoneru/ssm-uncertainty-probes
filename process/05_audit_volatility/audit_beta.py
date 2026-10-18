@@ -192,6 +192,11 @@ def main():
     ap.add_argument("--tag", default="gated_seed0")
     ap.add_argument("--batches", type=int, default=6)
     ap.add_argument("--splits", type=int, default=10)
+    ap.add_argument("--rowsets", default="all",
+                    choices=("all", "primary"),
+                    help="'primary' runs only 04's row set. The machine is "
+                         "shared and the secondary/tertiary sets are declared "
+                         "extras, not where any bar lives.")
     a = ap.parse_args()
     torch.set_num_threads(2)
 
@@ -250,11 +255,13 @@ def main():
                 ("5 zero-state, GBT", INST, "gbm"),
                 ("5 zero-state + history, GBT", INST + HIST, "gbm")]
 
-    for label, rows in (("04's primary row set (NOISY|REVISED, seen)", mk),
-                        ("declared secondary: ALL classes, seen",
-                         seen & d["valid"]),
-                        ("declared tertiary: ALL writes with a target",
-                         d["valid"])):
+    rowsets = [("04's primary row set (NOISY|REVISED, seen)", mk)]
+    if a.rowsets == "all":
+        rowsets += [("declared secondary: ALL classes, seen",
+                     seen & d["valid"]),
+                    ("declared tertiary: ALL writes with a target",
+                     d["valid"])]
+    for label, rows in rowsets:
         hdr(f"A1.1  beta quality on {label}")
         out, tr, te, b_const = fit_eval(d, rows, seqs, 0, policies)
         print(f"  n_train {tr.sum()}  n_test {te.sum()}   "

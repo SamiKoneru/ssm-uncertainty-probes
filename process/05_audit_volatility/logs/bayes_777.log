@@ -20,3 +20,26 @@ A10.1  the exact Bayes ceiling, stream 777
     04's oracle set + visit count                  0.8194 +/- 0.0072   n_test 10665
     richer history summaries                       0.9246 +/- 0.0050   n_test 10665
     the Bayes LLR alone                            0.9421 +/- 0.0043   n_test 10665
+    the Bayes LLR + everything above               0.9417 +/- 0.0043   n_test 10665
+
+==============================================================================
+A10.2  where the Bayes score gets its certainty
+==============================================================================
+  rows with more distinct values than the 4 option slots: 0.0927
+    those are LOGICALLY certain REVISED. Among them, actual REVISED fraction 1.0000
+    (it must be 1.0; anything else means the likelihood is wrong)
+
+  excluding them, Bayes AUROC on the remaining 19757 rows 0.9318
+  so the ceiling is not carried only by the logically-certain rows.
+
+==============================================================================
+A10.3  the pre-registered bar
+==============================================================================
+  04 reports its near-label ceiling as 0.9206 (everything) /
+  0.9236 (oracle + history) on stream 777, and its ORACLE FEATURES
+  ALONE as 0.7847.
+
+  exact Bayes ceiling here: 0.9449
+  bars: >= 0.95 -> ~0.92 is NOT a real ceiling
+        <= 0.94 -> ~0.92 is about right
+  -> AMBIGUOUS

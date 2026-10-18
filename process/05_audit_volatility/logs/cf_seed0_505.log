@@ -1,0 +1,10 @@
+A1b  model gated_seed0 (seed 0)   stream 505
+  fit on 6 batches of 32, evaluate counterfactually on 3 DISJOINT batches drawn later from the same stream
+
+==============================================================================
+A1b.0  control: the reimplementation must reproduce the shipped model
+==============================================================================
+  CE  shipped 1.673577   mine 1.673577   |diff| 0.000e+00   (bar < 1e-4)
+  max |feature column difference| over all 10 columns 0.000e+00
+  max |beta difference| 0.000e+00
+  PASS

@@ -1,1 +1,49 @@
 A1  model gated_seed0 (seed 0)   stream 505   6 batches of 32
+  self-test on 358 writes
+    max relative |err_quadratic - err_simulated|  4.961e-10   (bar < 1e-5)
+    max |grid argmin - clip(B/A,0,1)|             2.483e-04   (bar < 1e-3, grid step 5e-4)
+    PASS
+  model loss on this stream 1.6028
+
+==============================================================================
+A1.4  how good is the optimal-beta proxy itself?
+==============================================================================
+  The target v_next assumes the content written at address
+  k = normalize(W_k emb(s)) is what gets read back by
+  q = normalize(W_q emb(s)). Those are different learned
+  projections of the same token, so the proxy is only as tight as
+  their alignment. Per symbol, over the whole vocabulary:
+    cos(k_s, q_s)  same symbol : mean +0.8559  min +0.8152  max +0.8810
+    cos(k_s, q_r)  different   : mean -0.0615  sd 0.0378
+    margin (same - mean other) +0.9174
+  A1b measures actual cross-entropy and so needs none of this; it
+  is the validity check on A1's ranking, not on A1b's.
+
+==============================================================================
+A1.0  the leverage that pooled class-AUROC throws away
+==============================================================================
+  A_t = ||e_t||^2 is how much beta can change the stored content.
+  Pooled class-AUROC weights every row equally regardless of A_t.
+
+  04's primary row set (NOISY|REVISED, address written before):
+  rows 18960   ||e_t|| median 7.2434   mean 7.6183
+
+     ||e_t|| <   share of rows   share of total leverage A
+         1e-04          0.0000                    0.000000
+         1e-02          0.0000                    0.000000
+         1e-01          0.0000                    0.000000
+         5e-01          0.0000                    0.000000
+         1e+00          0.0000                    0.000000
+  top 10% of rows by leverage carry 0.1534 of it
+  top 25% of rows by leverage carry 0.3645 of it
+  top 50% of rows by leverage carry 0.6409 of it
+
+==============================================================================
+A1.1  beta quality on 04's primary row set (NOISY|REVISED, seen)
+==============================================================================
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: divide by zero encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: overflow encountered in matmul
+  return X @ coef_ + self.intercept_
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: invalid value encountered in matmul
+  return X @ coef_ + self.intercept_
