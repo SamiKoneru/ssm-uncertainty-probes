@@ -391,6 +391,73 @@ session's jobs throughout. The prediction, recorded here: **no loss gain beyond
 seed noise**, because the rate memory already ran that experiment for the
 strongest single history feature and got +0.19pp.
 
+### THAT PREDICTION IS FALSIFIED AT SEED 0
+
+`process/05_history_loss/` (branch `claude/sharp-dubinsky-67ebc6`) ran it. Seed
+0, stream 5150, all gated arms param-matched at 62,250, `h_ratio` clamp rate
+0.000%:
+
+```
+arm             loss     acc   vs none   vs ours   x bar (0.0064 nats)
+none          1.6433  0.6344     0.00%
+ours          1.5577  0.6411     5.21%        --      0.0
+ours+rate     1.5511  0.6386     5.61%   +0.0066      1.0
+ours+hist     1.4966  0.6410     8.93%   +0.0611      9.6
+ours+oracle   1.4829  0.6495     9.76%   +0.0748     11.7
+```
+
+**One seed, exploratory**; their verdict needs three plus a held-out stream. But
+the direction is unambiguous and my prediction was wrong, as was my ranking:
+`h_meane`, which this directory measured as the strongest history feature on
+separability, is the arm that lands AT the bar and does nothing, while the
+residual-direction family that I called "the weak half" carries the whole gain.
+
+**So the class-AUROC metric this entire directory is built on mis-ranked the
+features it was used to rank.** That is a defect in the method, not in the
+arithmetic, and it is the exact failure the auditing session suspected under its
+attack surface A1 and could not demonstrate. The loss experiment demonstrated it.
+
+### But the gain is not where volatility history would put it
+
+Gain of `ours+hist` over `ours` by prior visits to the write address, against
+the exact Bayes identifiability from `audit_bayes_ceiling.py`:
+
+```
+prior visits      n     loss gain    Bayes identifiability
+   0 (fresh)   3837       +0.0707    no history exists
+           1   3133       +0.2723    0.6868
+           2   2724       +0.1196    0.7858
+         3-4   4347       +0.0406    0.8896
+         5-8   5461       +0.0159    0.9773
+          9+   5994       -0.0126    0.9997
+```
+
+The gain is largest where the class is LEAST recoverable from history and
+NEGATIVE where it is almost perfectly recoverable, and it is +0.0707 on fresh
+writes where by construction there is no history. Two things explain that better
+than volatility does:
+
+- **`ours` is worse than `none` on early writes** (2.9707 vs 2.7407 at one prior
+  visit) and only overtakes it from three visits on. So the shipped memory gate
+  mis-writes early and much of this gain is repair, not new capability.
+- their `arms.py:239` is `h_nvis = log1p(p_cnt)`, an unblanked **per-address
+  visit counter**, and their blanking convention makes "all other features
+  exactly 0.0" a first-write indicator. A visit counter is `d_k` of state, one
+  scalar per address, not the `d_k x d_v` residual store this directory priced
+  the mechanism at, and it is not volatility.
+
+Two controls are running to separate these: `ours+nvis` (the counter alone,
+param-matched) and `ours+fresh` (a single seen/fresh bit). **Both were designed
+after seeing the visit-count profile, by me, so they are exploratory by
+construction** and that session has logged the amendment as the first one not
+written blind. Whatever they show needs confirmation on data not used to design
+them.
+
+And one result that is already clear: **`ours+hist` matches `ours` on accuracy**
+(0.6410 vs 0.6411) while `ours+oracle` gains (0.6495). The 1.4pp accuracy edge
+that motivated this whole directory is moved by the oracle and not at all by
+history, so the thing this session set out to close is still open.
+
 ## Files
 
 ```
