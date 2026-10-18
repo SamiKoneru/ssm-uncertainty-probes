@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import auroc as A
 import features as FE
+from task import L as T_L
 
 INST_SHIPPED = ["f_tok", "f_s1", "f_s2"]
 INST_ALL = FE.INST            # + ||S k|| and ||v||, both zero extra state
@@ -74,6 +75,27 @@ def main():
         u, r, c = [np.mean(wt[mk] == z) for z in (FE.UNSEEN, FE.REPEAT, FE.CHANGE)]
         rs = np.mean(wt[mk & seen] == FE.REPEAT)
         print(f"{nm:10s}{n:>10d}{u:>9.3f}{r:>9.3f}{c:>9.3f}{rs:>13.3f}")
+
+    hdr("PART 1b  ANOMALY noticed in passing: absorbing states in the task")
+    print("""task.py draws succ = rng.integers(N_SYM, size=N_SYM), so succ[s] == s
+with probability 1/40 per symbol, and a STABLE or REVISED symbol that points at
+itself is ABSORBING: the walk reaches it and never leaves. A NOISY symbol whose
+option set contains itself is absorbing with probability 1/4 per step. So some
+fraction of each sequence is a constant tail with a trivial prediction.""")
+    nv = d["h_nvis"]
+    mx = []
+    for sq in np.unique(seqs):
+        mk = (seqs == sq) & pos_ok
+        mx.append(np.nanmax(nv[mk]))
+    mx = np.array(mx)
+    print(f"\n  per-sequence max prior-visit count to a single address:")
+    print(f"    median {np.median(mx):.0f}   mean {mx.mean():.1f}   "
+          f"max {mx.max():.0f}   (L = {T_L} writes per sequence)")
+    for thr in (20, 60, 120):
+        print(f"    sequences where one address takes > {thr:3d} of the writes: "
+              f"{np.mean(mx > thr):.3f}")
+    print(f"  share of ALL writes that land on their sequence's single most"
+          f"-visited address: {np.mean(nv[pos_ok] > 20):.3f} have >20 prior visits")
 
     # ---------------------------------------------------------------- part 2
     hdr("PART 2  does beta matter on repeat writes?  ||e|| by write type")
@@ -182,6 +204,40 @@ def main():
                    ("all zero-state [+ ||Sk||, ||v||]", INST_ALL)):
         au, sd, ntot, nte = A.joint(d, mk2, fs, lab, seqs, kind="gbm")
         print(f"{nm:38s}{'gbm':>6}{au:>9.4f}{sd:>10.4f}{nte:>9d}")
+
+    # ---------------------------------------------------------------- part 6
+    hdr("PART 6  EXPLORATORY, added after the pre-registration was written")
+    print("""Reason it was added, stated before the numbers below were produced:
+the pre-registration treats 'instantaneous' as the opposite of 'history', but
+S_{t-1} IS a per-address history summary. Under the low beta this gate learns,
+a NOISY address holds a weighted AVERAGE of its option set, so ||S k|| is
+shrunk relative to ||v||, while a REVISED address holds approximately one
+value, so ||S k|| ~ ||v||. The occupancy ratio ||S k|| / ||v|| is therefore a
+ZERO-EXTRA-STATE readout of exactly the time structure this session assumed
+only a new memory could see. A tree cannot form a ratio from the two norms
+given separately, so it is given explicitly.
+
+This is the s3 = ||stored||/||v|| of archive/failed_features/s3_test.py,
+which was filed as null as a GATE INPUT. Nothing in the repo measured its
+separability under correct conditioning.
+
+PART 5 above is the pre-registered result and stands as reported.""")
+    d["f_ratio"] = d["f_nstored"] / (d["f_nv"] + 1e-8)
+    ext = INST_ALL + ["f_ratio"]
+    print(f"\n{'feature set':38s}{'kind':>6}{'AUROC':>9}{'boot sd':>10}{'n_test':>9}")
+    for cnm, extra in (("all seen writes", seen), ("CHANGE writes only", change)):
+        print(f"  [{cnm}]")
+        for nm, fs in (("all zero-state (pre-registered)", INST_ALL),
+                       ("+ occupancy ratio ||Sk||/||v||", ext)):
+            au, sd, ntot, nte = A.joint(d, nr_mask(clw, extra), fs, lab, seqs,
+                                        kind="gbm")
+            print(f"{nm:38s}{'gbm':>6}{au:>9.4f}{sd:>10.4f}{nte:>9d}")
+    print("\n  single-feature AUROC of the ratio alone:")
+    for cnm, extra in (("all seen writes", seen), ("CHANGE writes only", change),
+                       ("REPEAT writes only", repeat)):
+        mk = nr_mask(clw, extra)
+        au, n = A.single(d["f_ratio"][mk], lab[mk])
+        print(f"    {cnm:22s} AUROC {au:.4f}   n {n}")
 
 
 if __name__ == "__main__":
