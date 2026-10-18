@@ -232,3 +232,44 @@ what killed it, `ours+hist` can clear the bar.
   would be missed here. This measures the published operating point.
 - The machine is shared; everything runs at 2 threads and no number here is a
   timing claim except the explicitly labelled per-step cost.
+
+---
+
+## APPENDED 2026-10-18, before any result was produced: a factual correction
+
+**What is corrected.** Under "My prediction, recorded now" the original text
+reads:
+
+> The live risk to that prediction, stated so it is not a hindsight story: 04's
+> one prior loss datapoint (`rate_test.py`, +0.19pp worse) used a **delta-rule
+> rate memory with crosstalk**, and this arm is **exact**. If crosstalk really
+> was what killed it, `ours+hist` can clear the bar.
+
+**`+0.19pp worse` is wrong, and the sign is backwards.** I read
+`process/03_uncertainty_probe/logs/rate.log` after writing the above:
+
+```
+        gate     loss     acc     gain
+         mlp   1.5524  0.6416    4.93%
+  rate_delta   1.5492  0.6379    5.12%
+```
+
+4.93% and 5.12% are **gains over the baseline, not losses**. `rate_delta`'s
+loss is 1.5492 against the plain gate's 1.5524, so the delta-rule rate memory
+was **0.0032 nats BETTER**, not worse. 04's README states this correctly
+("+0.19pp difference") and I mis-read its sign when paraphrasing it.
+
+**Why this matters enough to write down rather than quietly fix.** 0.0032 nats
+is **exactly half my 0.0064 bar**. The single prior loss datapoint therefore
+points weakly TOWARDS a gain, not away from it, which makes the bar more live
+than my prediction implied, not less.
+
+**What does NOT change.** The bar stays at +0.0064 nats, the metric stays mean
+eval cross-entropy on stream 5150, the arms are unchanged, and my recorded
+prediction of no gain stands. Nothing here was produced by this directory's own
+runs; this is a correction to a quoted prior number, made before any of my own
+results existed.
+
+Caveat on the prior number itself: `rate_delta` is a different model
+(`GatedDeltaLayer` on `mixed_task`, not the shipped `GatedDeltaSSM`), one seed,
+scored on stream 12345. It is indicative, not a comparable measurement.
