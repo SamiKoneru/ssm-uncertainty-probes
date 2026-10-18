@@ -428,6 +428,35 @@ only the oracle buys both.** Since the 1.4pp accuracy edge is what motivated
 this directory, that distinction is the one that matters, and history is not a
 substitute for class knowledge.
 
+### AND THE GAIN IS NOT AN INFORMATION EFFECT
+
+Their provisional verdict (`e5f0f15`) adds the arm that settles what kind of
+effect this is. `ours+bayes` carries every feature `ours+oracle` has **plus**
+`b_post`, the exact posterior `P(REVISED | the address's value history)` under a
+flat prior, i.e. a genuine sufficient statistic for the history (cross-checked
+against this directory's `audit_bayes_ceiling.py` to four decimals). Gains over
+`ours`:
+
+```
+ours+hist     +0.0551    8.6x bar
+ours+oracle   +0.0698   10.9x bar
+ours+bayes    +0.0393    6.1x bar     <- STRICT SUPERSET of ours+oracle
+```
+
+**A strict superset of the features gains LESS.** Gains are not monotone in
+information, so whatever produces the +0.0551 is not the gate learning more
+about the address's volatility. And the gain sits in STABLE and NOISY; on
+**REVISED it is worse than `ours`**, and REVISED-versus-NOISY is the single
+discrimination this entire hypothesis was built on.
+
+So the practical conclusion of this directory may hold after all, on a third set
+of grounds and none of mine: not "there is no information" (there is, +0.08
+AUROC), not "it does not help loss" (it does, 8.6x the bar), but **the help is
+not an information effect and does not act on the classes the hypothesis was
+about.** There is no volatility mechanism here to build. Pending the two
+controls and the held-out stream 5151, which that session is correctly keeping
+untouched until the controls land.
+
 My prediction was wrong, as was my ranking:
 `h_meane`, which this directory measured as the strongest history feature on
 separability, is the arm that lands AT the bar and does nothing, while the
