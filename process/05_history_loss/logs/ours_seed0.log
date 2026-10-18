@@ -1,2 +1,6 @@
 arm ours  seed 0  800 steps  batch 24  2 threads
   step    0  loss 3.8193  5s
+  step  100  loss 1.7680  416s
+  step  200  loss 1.5080  684s
+  step  300  loss 1.7298  1107s
+  step  400  loss 1.6235  1563s

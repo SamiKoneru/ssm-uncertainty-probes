@@ -38,6 +38,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import task as T                                                  # noqa: E402
 from model import GatedDeltaSSM                                   # noqa: E402
 import arms as A                                                  # noqa: E402
+import bayes as BY                                                # noqa: E402
 
 torch.set_num_threads(2)
 FAIL = []
@@ -98,6 +99,29 @@ check("`ours+oracle` has every column live, o_memb included",
       f"live columns {[A.HIST[i] for i in live]}")
 check("o_memb is a 0/1 indicator",
       bool(((fo[..., 8] == 0) | (fo[..., 8] == 1)).all()))
+
+torch.manual_seed(7)
+m_by = A.build("ours+bayes")
+m_by.eval()
+with torch.no_grad():
+    _, _, fb = m_by(tok, return_beta=True, return_feats=True)
+bp = fb[..., 9]
+check("`ours+bayes` adds a 10th column in [0, 1]",
+      bool((bp >= 0).all() and (bp <= 1).all()),
+      f"range [{bp.min():.4f}, {bp.max():.4f}]")
+# a fresh address and t=0 carry no evidence, so the flat posterior 0.5
+nvis0 = torch.expm1(fb[..., 7]).round().long() == 0
+check("b_post is exactly 0.5 wherever there is no history",
+      bool((bp[nvis0] == 0.5).all()),
+      f"{int(nvis0.sum())} such positions")
+check("b_post is NOT 0.5 everywhere else",
+      bool((bp[~nvis0] != 0.5).float().mean() > 0.9),
+      f"{100 * (bp[~nvis0] != 0.5).float().mean():.1f}% informative")
+check("b_post matches bayes.posterior_batch recomputed outside the model",
+      bool(torch.allclose(bp, BY.posterior_batch(tok)[0], atol=1e-6)))
+ok_sc, pa, pb, pref = BY.selfcheck()
+check("bayes.py likelihoods normalise to 1/N_SYM on one observation", ok_sc,
+      f"{pa:.10f} / {pb:.10f} vs {pref:.10f}")
 
 # ---------------------------------------------------------------- CHECK 3
 print("\nCHECK 3  history carries no gradient of its own")

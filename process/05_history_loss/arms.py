@@ -13,17 +13,28 @@ them.
     ours         [tok, s1, s2, 0 x 6]               masked control
     ours+hist    [tok, s1, s2, h1..h5, 0]           all five history features
     ours+rate    [tok, s1, s2, 0,0,0,h_meane,0,0]   the rate memory alone
-    ours+oracle  [tok, s1, s2, h1..h5, o_memb]      THE CEILING, not a mechanism
+    ours+oracle  [tok, s1, s2, h1..h5, o_memb]      near-label oracle
+    ours+bayes   [tok, s1, s2, h1..h5, o_memb, b_post]  THE TRUE CEILING
     ours_pub     [tok, s1, s2]                      literal shipped 3-input gate
 
 `ours+oracle` adds `o_memb`: is the incoming value one this address has shown
 before? A NOISY address redraws from a fixed set so usually yes; a REVISED
-address moves to a fresh symbol so usually no. It is close to the class label
-BY CONSTRUCTION and is not buildable. It is here as the ceiling: 04's audit
-puts this feature set at AUROC ~0.92 across three different gates, stable
-enough to look like a property of the task. **If even the ceiling buys no
-loss, the question is closed for every history mechanism at once**, which is a
-stronger result than any realistic arm can give.
+address moves to a fresh symbol so usually no. Close to the class label by
+construction, and not buildable. 04 measured this feature set at AUROC ~0.92.
+
+`ours+bayes` adds `b_post` on top: the EXACT posterior
+P(REVISED | the address's value history) under a flat prior, derived
+analytically from the task generator in `bayes.py`. That is a **sufficient
+statistic** for the value history, so it upper-bounds every per-address
+history mechanism, all of which see a lossy function of the same sequence.
+It scores AUROC 0.9449, against 0.92 for the o_memb set, so **o_memb is NOT
+the ceiling** and an arm stopping there understates the available upside by
+about 0.025 AUROC.
+
+`ours+bayes` is the arm that can close the question: **if a sufficient
+statistic for the value history buys no loss, no per-address history
+mechanism can.** It reads N_OPT and P_REV off the task generator and is
+emphatically not buildable.
 
 The bookkeeping is EXACT: one slot per symbol, no superposition, so it is an
 UPPER BOUND on what any real per-address history mechanism could feed the gate.
@@ -48,10 +59,18 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import task as T                                                  # noqa: E402
 from model import GatedDeltaSSM                                   # noqa: E402
 
+import bayes as BY                                                # noqa: E402
+
 # order of the extra gate-input columns, after [tok, s1, s2]. The first five
 # are 04's history block; the sixth is its near-label oracle.
-HIST = ["h_cos", "h_cosmean", "h_ratio", "h_meane", "h_nvis", "o_memb"]
-N_EXTRA = len(HIST)
+HIST = ["h_cos", "h_cosmean", "h_ratio", "h_meane", "h_nvis", "o_memb",
+        "b_post"]
+# the six columns every arm in the PRIMARY set carries. `ours+bayes` carries a
+# seventh and is therefore 32 parameters larger; that mismatch is reported
+# rather than hidden, and `ours_pub` vs `ours` (192 params) calibrates how much
+# a handful of unused input weights is worth.
+N_EXTRA = 6
+N_BAYES = 7
 
 ARMS = {
     #  arm           n_hist    keep (indices into HIST)
@@ -59,7 +78,8 @@ ARMS = {
     "ours":         (N_EXTRA,  ()),
     "ours+hist":    (N_EXTRA,  (0, 1, 2, 3, 4)),
     "ours+rate":    (N_EXTRA,  (3,)),                    # h_meane only
-    "ours+oracle":  (N_EXTRA,  (0, 1, 2, 3, 4, 5)),      # ceiling, not buildable
+    "ours+oracle":  (N_EXTRA,  (0, 1, 2, 3, 4, 5)),      # near-label oracle
+    "ours+bayes":   (N_BAYES,  (0, 1, 2, 3, 4, 5, 6)),   # TRUE ceiling
     "ours_pub":     (0,        ()),
 }
 
@@ -95,6 +115,8 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
             self.register_buffer("hist_mask", mask)
         self.n_clamped = 0
         self.n_hist_rows = 0
+        self.n_bayes_seen = 0
+        self.n_bayes_zero_noisy = 0
 
     def forward(self, tokens, return_beta=False, return_feats=False):
         """tokens: [B, L] -> logits [B, L, vocab].
@@ -126,6 +148,18 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
             valset = torch.zeros(B, self.n_addr, self.n_addr, dtype=torch.bool,
                                  device=dev)
             zero_h = torch.zeros(B, self.n_hist, device=dev, dtype=dt)
+            if self.n_hist > N_EXTRA:
+                # b_post depends only on the token stream, so it is computed
+                # ONCE per forward rather than inside the recurrence. Guarded,
+                # so arms with n_hist <= N_EXTRA are untouched.
+                post, st = BY.posterior_batch(tokens)
+                post = post.to(dev).to(dt)
+                self.n_bayes_seen += st["seen"]
+                self.n_bayes_zero_noisy += st["zero_noisy"]
+                zero_h = zero_h.clone()
+                zero_h[:, N_EXTRA] = 0.5       # flat prior: no evidence yet
+            else:
+                post = None
 
         S = emb.new_zeros(B, self.d_v, self.d_k)
         logits, betas, feats = [], [], []
@@ -146,7 +180,7 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
                     with torch.no_grad():
                         h = self._history(t, tokens, e.detach(), ne.detach(),
                                           ar, last_e, sum_e, sum_ne, cnt,
-                                          valset, zero_h)
+                                          valset, zero_h, post)
                     gin = torch.cat([gin, h * self.hist_mask], -1)
                 if return_feats:
                     feats.append(gin.detach())
@@ -166,7 +200,7 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
         return (lg, torch.stack(betas, 1)) if return_beta else lg
 
     def _history(self, t, tokens, e, ne, ar, last_e, sum_e, sum_ne, cnt,
-                 valset, zero_h):
+                 valset, zero_h, post=None):
         """The five exact per-address history features at step t, then update.
 
         The write at step t stores the value from token x_t at the address
@@ -213,8 +247,10 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
         sum_ne[ar, addr] = p_ne + ne
         cnt[ar, addr] = p_cnt + 1
         valset[ar, addr, val] = True
-        return torch.stack([h_cos, h_cosmean, h_ratio, h_meane, h_nvis,
-                            o_memb], -1)
+        cols = [h_cos, h_cosmean, h_ratio, h_meane, h_nvis, o_memb]
+        if post is not None:
+            cols.append(post[:, t])
+        return torch.stack(cols, -1)
 
 
 def build(arm, vocab=T.N_SYM, gate_width=32):
@@ -246,3 +282,6 @@ if __name__ == "__main__":
           f"(no gate used; mismatch is by design and is reported)")
     print(f"ours_pub is {counts['ours'] - counts['ours_pub']:+,} vs ours "
           f"(the 6 masked input columns' first-layer weights)")
+    print(f"ours+bayes is {counts['ours+bayes'] - counts['ours']:+,} vs ours "
+          f"(its 7th column; reported, and ours_pub calibrates what unused "
+          f"input weights are worth)")

@@ -369,3 +369,85 @@ streams 5150 and 5151, and my recorded prediction. I am not relaxing the bar
 to let a gain through: +0.0064 is 7% of the ~0.09 nats the whole memory gate
 buys over `none`, so an effect worth a fraction of the headline mechanism still
 registers.
+
+---
+
+## APPENDED 2026-10-18 14:00, third amendment, still before any result
+
+**Status: no run of mine has finished.** Seed 0's `none` is at step 500 of 800
+and `ours` at step 400. No checkpoint exists, no loss has been scored, and
+`score.py` has only ever been run on throwaway 2-step models on a junk stream.
+
+### Why: o_memb is not the ceiling, and I said it was
+
+The briefing session corrected itself. The ~0.92 figure it gave me as "the
+task's ceiling, stable across three gates" is a property of its **feature
+set**, which was the same in all three measurements, which is exactly why it
+looked stable. The true Bayes ceiling, derived analytically from `task.py`
+with no model involved, is **0.9449** on stream 777.
+
+So `ours+oracle`, which I added one amendment ago and called "THE CEILING",
+reaches 0.92 of an available 0.945 and **understates the upside by ~0.025
+AUROC**. The claim "if even the ceiling buys no loss the question is closed"
+does not hold for that arm.
+
+### Change: a sixth gated arm, `ours+bayes`, the real ceiling
+
+```
+ours+bayes   [tok, s1, s2, h_cos, h_cosmean, h_ratio, h_meane, h_nvis,
+              o_memb, b_post]
+```
+
+`b_post` is the exact posterior `P(REVISED | the address's value history)`
+under a flat prior, computed in `bayes.py` from the generative process alone.
+It is a **sufficient statistic for the value history**, so it upper-bounds
+every per-address history mechanism, all of which see a lossy function of the
+same sequence. It is not buildable: it reads `N_OPT` and `P_REV` off the task
+generator. This is the arm that can close the question.
+
+Fed to the gate as `sigmoid(LLR)` rather than the raw LLR. Monotone, so the
+AUROC is identical (0.9449 both ways, checked), but it lands in [0, 1]
+alongside `o_memb` instead of spanning [-20, 20] and swamping a first layer
+whose other columns sit between -1 and 5. No history means exactly 0.5.
+
+**Verified against 04's `audit_bayes_ceiling.py`, which recomputes from
+scratch**: AUROC 0.9449 vs its 0.9449; `P(v|NOISY) = 0` on 9.27% of
+NOISY/REVISED writes vs its "9 to 10%"; and AUROC by prior writes to the
+address 0.6868 / 0.7858 / 0.8896 / 0.9773 / 0.9997 at 1 / 2 / 3-4 / 5-8 / 9+
+against its 0.687 / 0.786 / 0.890 / 0.977 / 0.9997.
+
+**Param mismatch, stated now.** `ours+bayes` has 62,282 parameters against the
+other gated arms' 62,250: 32 more, from its seventh input column, 0.05%. I did
+NOT restart the other arms to match, because 16 runs were already queued and
+the briefing session explicitly said not to restart on its account. The
+mismatch is reported in the results table. `ours_pub` vs `ours` (192 unused
+input weights, 3x the discrepancy) is the empirical calibration of whether a
+difference this small moves anything.
+
+**The 16 queued runs are provably unaffected.** `arms.py` is read fresh by
+every new training process, so I fingerprinted all six existing arms' weight
+initialisation and forward-pass output before the edit and again after:
+byte-identical on both. The seventh column is computed only when
+`n_hist > 6`.
+
+### Change: loss sliced by prior writes to the query address, EXPLORATORY
+
+Identifiability is steeply visit-count dependent (the table above), and 9 to
+10% of writes are PROVABLY REVISED because more than `N_OPT = 4` distinct
+values have been seen there. So a gain need not be uniform across writes, and
+**a flat null is a different result from a null overall with a gain in the
+identifiable slice**.
+
+Reported at bins 0 / 1 / 2 / 3-4 / 5-8 / 9+ prior writes to the query address,
+on NOISY+REVISED queries. **No bar, purely descriptive, EXPLORATORY**: these
+bins were chosen to match the briefing session's AUROC table, were not
+pre-specified when the bar was set, and six bins invite exactly the
+multiple-comparison problem the rest of this file avoids. Anything seen here
+is a hypothesis for a future run, never a verdict from this one.
+
+### What does NOT change
+
+The primary metric, the +0.0064 bar, the validity gate, 3 seeds, the published
+protocol, eval streams 5150 and 5151, and the existing six arms. My recorded
+prediction of no gain stands, and it now rests on less than it did, so a gain
+is a live outcome and will be reported as one if it happens.

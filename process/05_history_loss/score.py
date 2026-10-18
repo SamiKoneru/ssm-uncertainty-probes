@@ -54,8 +54,35 @@ PRIOR_SD = 0.0039     # gated_delta_ssm/train.py docstring, n=3
 VALIDITY_PCT = 4.00   # validation/README.md's own confirmed bar
 CLS = ("STABLE", "NOISY", "REVISED")
 DEFAULT_ARMS = ["none", "ours", "ours+hist", "ours+rate", "ours+oracle",
-                "ours_pub"]
-TEST_ARMS = ["ours+hist", "ours+rate", "ours+oracle"]
+                "ours+bayes", "ours_pub"]
+TEST_ARMS = ["ours+hist", "ours+rate", "ours+oracle", "ours+bayes"]
+# Identifiability is steeply visit-count dependent: the exact Bayes AUROC for
+# NOISY vs REVISED is 0.687 at 1 prior write to the address, 0.786 at 2, 0.890
+# at 3-4, 0.977 at 5-8 and 0.9997 at 9 or more. So a gain, if one exists, need
+# not be uniform, and a flat null is a different result from a null overall
+# with a gain in an identifiable slice. Reported, no bar: EXPLORATORY.
+VISIT_BINS = [(0, 0, "0 (fresh)"), (1, 1, "1"), (2, 2, "2"), (3, 4, "3-4"),
+              (5, 8, "5-8"), (9, 10 ** 9, "9+")]
+
+
+def query_visits(tok):
+    """[B, L] tokens -> [B, L] prior writes to the QUERY address.
+
+    The readout at position t uses q_t from x_t to predict x_{t+1}, so what
+    matters for that prediction is how many times x_t has already been written
+    to AS AN ADDRESS, i.e. how often x_t appeared at some position before t.
+    """
+    B, L = tok.shape
+    out = np.zeros((B, L), np.int64)
+    for b in range(B):
+        c = {}
+        row = tok[b]
+        for t in range(L):
+            out[b, t] = c.get(int(row[t]), 0)
+            if t >= 1:
+                a = int(row[t - 1])
+                c[a] = c.get(a, 0) + 1
+    return out
 
 
 def load(arm, seed):
@@ -72,10 +99,11 @@ def load(arm, seed):
 @torch.no_grad()
 def evaluate(m, stream, batches=6, batch=32):
     ev = np.random.default_rng(stream)
-    ce, cor, bet, cq, cw, sn = [], [], [], [], [], []
+    ce, cor, bet, cq, cw, sn, qv = [], [], [], [], [], [], []
     for _ in range(batches):
         x, cl, seen = T.sample(ev, batch)
         tgt = x[:, 1:]
+        qv.append(torch.from_numpy(query_visits(x[:, :-1].numpy())))
         lg, b = m(x[:, :-1], return_beta=True)
         ce.append(F.cross_entropy(lg.reshape(-1, T.N_SYM), tgt.reshape(-1),
                                   reduction="none").reshape(batch, T.L))
@@ -85,9 +113,15 @@ def evaluate(m, stream, batches=6, batch=32):
         cw.append(F.pad(cl, (1, 0))[:, :T.L])           # class of x_{t-1}, write
         sn.append(seen)
     f = lambda z: torch.cat(z).reshape(-1).numpy()
-    ce, cor, cq = f(ce), f(cor), f(cq)
+    ce, cor, cq, qv = f(ce), f(cor), f(cq), f(qv)
     hard = (cq == 1) | (cq == 2)
+    by_visit = {}
+    for lo, hi, nm in VISIT_BINS:
+        m = hard & (qv >= lo) & (qv <= hi)
+        by_visit[nm] = [float(ce[m].mean()) if m.sum() else float("nan"),
+                        int(m.sum())]
     return {
+        "loss_by_visit": by_visit,
         "loss": float(ce.mean()), "acc": float(cor.mean()),
         "loss_hard": float(ce[hard].mean()), "acc_hard": float(cor[hard].mean()),
         "loss_by_class": [float(ce[cq == i].mean()) for i in range(3)],
@@ -213,6 +247,35 @@ def main():
         print(f"{arm:13s}{np.mean([x['acc'] for x in r['runs']]):>8.4f}"
               f"{np.mean([x['acc_hard'] for x in r['runs']]):>10.4f}   "
               + "".join(f"{z:>9.4f}" for z in lb))
+
+    print("\nEXPLORATORY, no bar: loss on NOISY+REVISED queries, sliced by "
+          "prior writes to the QUERY address")
+    print("  (Bayes AUROC for the class at those counts: 0.687 / 0.786 / "
+          "0.890 / 0.977 / 0.9997 at 1 / 2 / 3-4 / 5-8 / 9+)")
+    names = [nm for _, _, nm in VISIT_BINS]
+    print(f"  {'arm':13s}" + "".join(f"{nm:>11}" for nm in names))
+    print(f"  {'n per seed':13s}"
+          + "".join(f"{res[list(res)[0]]['runs'][0]['loss_by_visit'][nm][1]:>11,}"
+                    for nm in names))
+    base_v = None
+    for arm, r in res.items():
+        if arm.startswith("_"):
+            continue
+        v = [float(np.mean([x["loss_by_visit"][nm][0] for x in r["runs"]]))
+             for nm in names]
+        if arm == "ours":
+            base_v = v
+        print(f"  {arm:13s}" + "".join(f"{z:>11.4f}" for z in v))
+    if base_v is not None:
+        print(f"\n  gain vs ours (positive = history helped)")
+        for arm, r in res.items():
+            if arm.startswith("_") or arm not in TEST_ARMS:
+                continue
+            v = [float(np.mean([x["loss_by_visit"][nm][0] for x in r["runs"]]))
+                 for nm in names]
+            print(f"  {arm:13s}"
+                  + "".join(f"{base_v[i] - v[i]:>+11.4f}"
+                            for i in range(len(names))))
 
     print(f"\n{'arm':13s}mean beta by key class on seen writes "
           f"{CLS}")
