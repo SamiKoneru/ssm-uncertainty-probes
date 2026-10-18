@@ -1,0 +1,61 @@
+A2 addressing audit. Randomly initialised model (the bookkeeping is
+weight-independent), 2 batches of 16 sequences, stream 505.
+
+==========================================================================
+A2.1  bookkeeping 'address written before' == task's shifted `seen`
+==========================================================================
+  rows checked 8192
+  PASS: the two definitions agree on every row
+
+==========================================================================
+A2.4  cls_w[t] == class of symbol x_{t-1}, from an independent map
+==========================================================================
+  PASS
+
+==========================================================================
+A2.3  independent reimplementation of every history/oracle column
+==========================================================================
+  features.py uses vectorised scatter/gather over [B, N_SYM, d_v]
+  buffers; the reference below is a plain per-sequence Python loop
+  over dicts, written from task.py and model.py.
+
+  column          max abs diff   NaN-pattern diffs
+  h_cos              2.723e-07                   0
+  h_cosmean          2.686e-07                   0
+  h_ratio            4.768e-07                   0
+  h_meane            1.431e-06                   0
+  h_nvis             0.000e+00                   0
+  o_memb             0.000e+00                   0
+  o_ndist            0.000e+00                   0
+
+  bar: max abs diff < 1e-5 and identical NaN patterns
+  PASS
+
+==========================================================================
+A2.2  mutation test: does the replay assert constrain the addressing?
+==========================================================================
+  features.py docstring: '`replay` asserts its own recurrence
+  reproduces the shipped forward pass.' The question is whether that
+  assert gives any coverage of the ADDRESSING claim stated two
+  paragraphs above it in the same docstring.
+
+  corruption applied:  addr = tokens[:, t - 1]  ->  tokens[:, t]
+
+  result: MUTANT_ASSERT_PASSED
+
+  DEFECT CONFIRMED: the assert does NOT detect a corrupted address.
+  The bookkeeping arrays (last_e, sum_e, cnt, ndist, valset,
+  last_val) are pure side outputs: nothing in them feeds S or
+  the logits, so the assert cannot see them. It verifies the
+  recurrence and gives ZERO coverage of the addressing.
+
+==========================================================================
+A2 VERDICT
+==========================================================================
+  A2.1 bookkeeping vs task `seen`      PASS
+  A2.3 independent reimplementation    PASS
+  A2.4 class labelling                 PASS
+  A2.2 assert coverage of addressing   DEFECT (no coverage)
+
+  So: the addressing as SHIPPED is correct, and the assert cited
+  for it proves nothing about it.
