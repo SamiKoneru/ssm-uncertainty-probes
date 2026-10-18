@@ -391,23 +391,44 @@ session's jobs throughout. The prediction, recorded here: **no loss gain beyond
 seed noise**, because the rate memory already ran that experiment for the
 strongest single history feature and got +0.19pp.
 
-### THAT PREDICTION IS FALSIFIED AT SEED 0
+### THAT PREDICTION IS FALSIFIED. 3 SEEDS, COMMITTED
 
-`process/05_history_loss/` (branch `claude/sharp-dubinsky-67ebc6`) ran it. Seed
-0, stream 5150, all gated arms param-matched at 62,250, `h_ratio` clamp rate
-0.000%:
+`process/05_history_loss/` (branch `claude/sharp-dubinsky-67ebc6`, commit
+`47c8e68`) ran it. 3 seeds, stream 5150, all gated arms param-matched at 62,250,
+`h_ratio` clamp rate 0.000%, pre-registered bar 0.0064 nats:
 
 ```
-arm             loss     acc   vs none   vs ours   x bar (0.0064 nats)
-none          1.6433  0.6344     0.00%
-ours          1.5577  0.6411     5.21%        --      0.0
-ours+rate     1.5511  0.6386     5.61%   +0.0066      1.0
-ours+hist     1.4966  0.6410     8.93%   +0.0611      9.6
-ours+oracle   1.4829  0.6495     9.76%   +0.0748     11.7
+arm          loss mean      sd     acc      sd   vs none   vs ours   x bar
+none            1.6420  0.0014  0.6340  0.0016     0.00%
+ours            1.5531  0.0055  0.6455  0.0045     5.42%        --     0.0
+ours_pub        1.5509  0.0035  0.6451  0.0059     5.55%   +0.0022     0.3
+ours+rate       1.5470  0.0054  0.6432  0.0042     5.79%   +0.0060     0.9
+ours+hist       1.4979  0.0017  0.6413  0.0023     8.78%   +0.0551     8.6
+ours+oracle     1.4832  0.0005  0.6484  0.0015     9.67%   +0.0698    10.9
 ```
 
-**One seed, exploratory**; their verdict needs three plus a held-out stream. But
-the direction is unambiguous and my prediction was wrong, as was my ranking:
+`ours_pub` at 5.55% reproduces the published 5.47%, so the harness is sound. The
+loss effect is not marginal: `ours+hist` per-seed is 1.4966 / 1.4998 / 1.4974,
+sd 0.0017, the tightest of any arm, against a gap of +0.0551. **`ours+rate`
+lands at 0.9x the bar, BELOW it**, so the rate memory is confirmed null across
+three seeds.
+
+On NOISY/REVISED writes only: none 2.7539, ours 2.6154, `ours+hist` 2.5429,
+`ours+oracle` 2.5176. So history closes about half the remaining distance from
+the gate to the oracle on the writes that matter.
+
+**ACCURACY, and it is the opposite sign.** `ours+hist` is 0.6413 against `ours`
+at 0.6455, lower on 3 of 3 seeds (-0.0001, -0.0062, -0.0063). **But the
+magnitude, -0.42pp, is within one seed-sd of `ours` itself (0.45pp), and a sign
+test on n=3 is p=0.125.** So: directionally consistent, NOT established. Stated
+that way because the first version of this note called it a regression, which
+n=3 does not support. What IS clear is the contrast with `ours+oracle`, which
+gains accuracy (+0.29pp at sd 0.0015) as well as loss. **History buys loss;
+only the oracle buys both.** Since the 1.4pp accuracy edge is what motivated
+this directory, that distinction is the one that matters, and history is not a
+substitute for class knowledge.
+
+My prediction was wrong, as was my ranking:
 `h_meane`, which this directory measured as the strongest history feature on
 separability, is the arm that lands AT the bar and does nothing, while the
 residual-direction family that I called "the weak half" carries the whole gain.
@@ -453,10 +474,10 @@ construction** and that session has logged the amendment as the first one not
 written blind. Whatever they show needs confirmation on data not used to design
 them.
 
-And one result that is already clear: **`ours+hist` matches `ours` on accuracy**
-(0.6410 vs 0.6411) while `ours+oracle` gains (0.6495). The 1.4pp accuracy edge
-that motivated this whole directory is moved by the oracle and not at all by
-history, so the thing this session set out to close is still open.
+And the headline that survives all of it: the 1.4pp accuracy edge that motivated
+this directory is moved by the oracle and not by history, so the thing it set out
+to close is still open. See the accuracy paragraph above for why that is stated
+as a contrast rather than as a regression.
 
 ## Files
 
