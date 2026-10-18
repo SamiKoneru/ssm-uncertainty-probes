@@ -33,11 +33,12 @@ that **fires in 04's favour**.
 | A1 | `R_beta = gain_hist / gain_nonlin` | `>= 1.00` collapse / `<= 0.75` survive | **VOID** - denominator is zero within noise, and its claimant was retracted |
 | A1b | counterfactual loss | `g_hist >= 0.0039` / `<= 0.0013` nats | **neither fires, and the test is underpowered by 28x** |
 | A2 | addressing + the replay assert | pass/fail | addressing **PASSES** 3 ways; the assert has **zero coverage** of it |
-| A3 | is the +0.08 capacity? | `gain_junk >= 0.02` / `<= 0.01` | see below |
-| A4 | error bars and leakage | `ratio_sd >= 2.0` / `<= 1.5`; leak `<= 0.02` | see below |
+| A3 | is the +0.08 capacity? | `gain_junk >= 0.02` / `<= 0.01` | **-0.0364, capacity REJECTED, fires for 04** |
+| A4.1 | are the error bars honest? | `ratio_sd >= 2.0` / `<= 1.5` | **1.29, HONEST, fires for 04** |
+| A4.2 | does the split leak? | `\|AUROC-0.5\| <= 0.02` | **<= 0.0040, no leakage, fires for 04** |
 | A6.1 | (d)'s "93%" arithmetic | `<= 0.80` means wrong | **0.723, (d) IS WRONG** |
 | A6.2 | (d) on one model and stream | `>= 0.80` survive / `<= 0.70` fail | **0.513, (d) FAILS** |
-| A7 | was "indecisive" honest? | pooled 95% CI contains 0.80 | see below |
+| A7 | was "indecisive" honest? | pooled 95% CI contains 0.80 | **HONEST, fires for 04** (see the pooling trap) |
 | A8 | (b)'s framing | argument, no bar | **defect confirmed; 04 retracted it independently** |
 | A9 | 04's linear baseline vs its overflow warnings | `>= +0.01` inflated / within `0.01` sound | **SOUND, fires for 04** |
 | A10 | is ~0.92 a real ceiling? | `>= 0.95` not-a-ceiling / `<= 0.94` confirmed | **0.9466: AMBIGUOUS by my bar, mis-specified** |
@@ -311,6 +312,88 @@ multiplicity, `ndist`, `nvis`. That beats 04's 0.9236 "oracle + history" and
 `h_meane`. **If anything on this axis is worth building it is counters, not
 `h_cos`.**
 
+### A3 and A4 - capacity, error bars and leakage all survive
+
+My capacity control was sharper than 04's single position feature: five junk
+features, two of them sharing the history block's GROUPED structure.
+
+```
+  comparison                                        base    with    delta      sd
+  5 zero-state -> + 5 HISTORY (04's claim)        0.8105  0.8940  +0.0835  0.0028
+  5 zero-state -> + 5 JUNK (capacity control)     0.8105  0.7740  -0.0364  0.0069
+  5 zero-state -> + position only (04's control)  0.8105  0.8154  +0.0050  0.0017
+  5 zero-state -> + j_addrconst only              0.8105  0.7730  -0.0375  0.0058
+  5 zero-state -> + j_seqconst only               0.8105  0.7934  -0.0170  0.0037
+  + 5 JUNK -> + 5 JUNK + 5 HISTORY                0.7740  0.8812  +0.1071  0.0057
+```
+
+`j_addrconst` is one N(0,1) draw per (sequence, address): **exactly the
+per-address grouped structure a volatility memory would have, carrying zero
+class information.** It costs -0.0375, and the five junk features together cost
+-0.0364, so **capacity is decisively REJECTED** - history's +0.0835 is
+information. The last row is the strongest form: history still adds **+0.1071**
+on top of junk that has already consumed tree capacity. Every junk feature's
+single-feature AUROC is at chance (0.4947 to 0.5477).
+
+`A4.1`: the delta recomputed across 6 independent by-sequence splits has mean
+**+0.0836** (min 0.0766, max 0.0885) with an across-split sd of 0.0044 against
+a mean reported bootstrap sd of 0.0034. **`ratio_sd = 1.29`, under my 1.5
+threshold, so 04's error bars are HONEST** - they slightly understate, as a
+test-only bootstrap must, but not materially.
+
+`A4.2`: with the label replaced by a class drawn independently per (sequence,
+address), all three feature sets sit at chance (`|AUROC-0.5|` of 0.0040, 0.0034,
+0.0040) while the real label through the identical code path gives 0.8940. **No
+leakage.**
+
+### A7 - "indecisive" was honest, and pooling is a trap I nearly fell into
+
+My retrained seed-0 model reproduces 04's two figures **exactly**: 777 = 0.8095,
+888 = 0.7983, gap +0.0112, all to four decimals. Bit-exact model, bit-exact
+measurement.
+
+```
+    stream     AUROC   boot sd            95% CI    n rows   vs 0.80
+       777    0.8095    0.0058   [0.7980, 0.8205]     21776 straddles
+       888    0.7983    0.0067   [0.7848, 0.8108]     21731 straddles
+       505    0.8059    0.0064   [0.7931, 0.8180]     22119 straddles
+       606    0.8093    0.0056   [0.7983, 0.8204]     21856 straddles
+
+  pooled 777+888   0.8079 +/- 0.0043   [0.7990, 0.8161]   contains 0.80
+  pooled all four  0.8135 +/- 0.0029   [0.8078, 0.8194]   EXCLUDES 0.80
+```
+
+The second pooled row looks like it convicts 04, and I nearly reported that.
+**It does not, and the reason is that pooling changed the estimand.** The
+pooled-four AUROC of 0.8135 is HIGHER than every individual stream (0.8095,
+0.7983, 0.8059, 0.8093), which pooling cannot do if it were only adding
+precision. `measure()` fits the tree on half the POOLED sequences, so pooling
+four streams hands the classifier about 4x the training data and it gets better.
+0.8135 answers "what does a tree trained on 43k rows reach", not "what is a
+sharper estimate of the 10k-row quantity 04 set a bar on".
+
+**At equal training-set size the bar is genuinely straddled**: four streams span
+0.7983 to 0.8095 and every single-stream CI contains 0.80. **So 04's
+"indecisive" was HONEST**, and its decision not to lean on the premise bar was
+correct. `A7b`: the 777-vs-888 gap is 1.9 single-stream bootstrap SDs, so it is
+a marginally real difference between streams rather than pure noise, and across
+10 split seeds on 777 alone the figure moves 0.8009 to 0.8132.
+
+### A2.5 - the labelling trap, reproduced exactly
+
+```
+  variant                                             AUROC        n
+  as shipped: label class(x_{t-1}), mask sn_addr     0.8056    11913
+  label class(x_t) instead (the known trap)          0.5201     8039
+  mask sn_task instead (describes the VALUE token)   0.8480     9653
+  pooled over all seen writes, as shipped            0.3521    22119
+  pooled, label class(x_t)                           0.4881    22023
+```
+
+04 reported the trap as 0.8073 -> 0.5201 on 777. **My 0.5201 matches to four
+decimals**, and the pooled 0.3521 matches its 0.353. The trap destroys the
+signal rather than inverting it, as 04 said.
+
 ### A2 - the addressing is right, and the assert cited for it proves nothing
 
 **Mutation test: corrupting `addr = tokens[:, t-1]` to `tokens[:, t]` leaves
@@ -407,10 +490,11 @@ not a shared assumption.
 
 ## Verdict on each claim
 
-- **(a)** The gate's three features reach pooled **0.8059** on my stream 505
-  (all five zero-state: 0.8105), against 04's 0.8095 (777) and 0.7983 (888). The
-  0.80 bar is straddled across streams and seeds, exactly as 04 reported. See
-  A7 for whether pooling resolves it. **What does NOT survive is the framing**:
+- **(a)** Survives as a measurement, and its own uncertainty was reported
+  honestly. Four streams give 0.7983 to 0.8095 and every single-stream CI
+  contains 0.80, so the bar is genuinely straddled and 04's "indecisive" was
+  right (A7; pooling appears to resolve it only because it also quadruples the
+  classifier's training data). **What does NOT survive is the framing**:
   the headroom above these features is to **0.9466**, not 0.92, so the gap is
   `0.136` rather than `0.109`, and 04's own corrected figure agrees.
 - **(b)** Retracted by 04, independently defective per A8. Dead.
