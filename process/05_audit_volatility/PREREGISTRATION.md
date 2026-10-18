@@ -338,3 +338,47 @@ Stated now, so it is not invented later:
 - I retrain every model, so any disagreement with 04's figures could be my
   retrain rather than 04's measurement. A2/A6 reproductions are therefore
   reported with both numbers side by side.
+
+---
+
+# APPENDED 2026-10-18, after the original was committed (72750c3)
+
+Nothing above was edited. This section was added before the measurement it
+describes was run, for a reason found by READING 04's logs rather than by
+looking at any result of my own.
+
+## A9 - is (b)'s linear baseline numerically valid?
+
+`04/logs/separability_777.log` PART 5 interleaves these warnings into the
+logistic-regression rows:
+
+    RuntimeWarning: divide by zero encountered in matmul
+    RuntimeWarning: overflow encountered in matmul
+    RuntimeWarning: invalid value encountered in matmul
+      raw_prediction = X @ weights + intercept
+
+The rows produced are `logit 0.6760` for the gate's three features and
+`logit 0.7640` for all five. The first is one of the two numbers in claim (b):
+`+0.134 = 0.8095 (GBT) - 0.6758 (linear)`. If the linear fit overflowed, that
+baseline is too low and the "free nonlinear headroom" is overstated.
+
+`auroc.py::_clean` imputes non-finite entries to the TRAIN median and
+winsorises to the train 0.1/99.9 percentiles. Both are computed with
+`np.nanpercentile` over `np.where(np.isfinite(Xtr), Xtr, np.nan)`, so a column
+that is entirely non-finite in the train half yields NaN bounds and
+`np.clip(Z, nan, nan)` returns NaN, which would reach the solver.
+
+**Test.** On my retrained seed-0 model, stream 505, same rows and split:
+report the finite/inf/NaN census of each feature column; then refit the linear
+read three ways - 04's `_clean` path as shipped, a rank/quantile transform, and
+`_clean` plus an explicit non-finite assert - and compare.
+
+**Bar.** This is a numerical-validity check, not a hypothesis test:
+
+- **(b)'s +0.134 is INFLATED** if a numerically clean linear read of the three
+  features scores `>= +0.01` AUROC above 04's 0.676 figure, since that shrinks
+  the gap claim (b) rests on.
+- **(b)'s baseline is SOUND** if every clean variant lands within `0.01` of
+  0.676.
+- Reported either way, with the warning census, because a silent overflow in a
+  published number is worth recording whatever it does to the headline.
