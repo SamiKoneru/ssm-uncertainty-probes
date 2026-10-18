@@ -5,3 +5,5 @@ done ours_hist_seed0: RESULT {"arm": "ours+hist", "seed": 0, "secs": 841.6, "par
 done ours_pub_seed0: RESULT {"arm": "ours_pub", "seed": 0, "secs": 479.1, "params": 62058, "clamp": 0.0}
 done ours_oracle_seed0: RESULT {"arm": "ours+oracle", "seed": 0, "secs": 522.6, "params": 62250, "clamp": 0.0}
 SEED 0 COMPLETE
+done none_seed1: RESULT {"arm": "none", "seed": 1, "secs": 578.3, "params": 62058, "clamp": 0.0}
+done ours_seed1: RESULT {"arm": "ours", "seed": 1, "secs": 629.0, "params": 62250, "clamp": 0.0}

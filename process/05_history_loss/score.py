@@ -54,8 +54,12 @@ PRIOR_SD = 0.0039     # gated_delta_ssm/train.py docstring, n=3
 VALIDITY_PCT = 4.00   # validation/README.md's own confirmed bar
 CLS = ("STABLE", "NOISY", "REVISED")
 DEFAULT_ARMS = ["none", "ours", "ours+hist", "ours+rate", "ours+oracle",
-                "ours+bayes", "ours_pub"]
-TEST_ARMS = ["ours+hist", "ours+rate", "ours+oracle", "ours+bayes"]
+                "ours+bayes", "ours+nvis", "ours+fresh", "ours_pub"]
+# ours+nvis and ours+fresh were added after seeing seed 0, as CONTROLS that
+# can only explain the headline gain away. Flagged in every table.
+TEST_ARMS = ["ours+hist", "ours+rate", "ours+oracle", "ours+bayes",
+             "ours+nvis", "ours+fresh"]
+POST_HOC = {"ours+nvis", "ours+fresh"}
 # Identifiability is steeply visit-count dependent: the exact Bayes AUROC for
 # NOISY vs REVISED is 0.687 at 1 prior write to the address, 0.786 at 2, 0.890
 # at 3-4, 0.977 at 5-8 and 0.9997 at 9 or more. So a gain, if one exists, need
@@ -134,6 +138,8 @@ def evaluate(m, stream, batches=6, batch=32):
 
 def table(res, key, label, bar, arms, note=""):
     print(f"\n{label}   bar {bar:+.4f} nats {note}")
+    print("  (* = control arm added after seeing seed 0; can only explain "
+          "the gain away)")
     print(f"  {'arm':13s}{'s0':>9}{'s1':>9}{'s2':>9}{'mean':>9}{'sd':>8}"
           f"{'gain vs ours':>14}{'per-seed gain':>28}{'verdict':>9}")
     base = res.get("ours")
@@ -154,7 +160,9 @@ def table(res, key, label, bar, arms, note=""):
             r[f"{key}_verdict"] = verd
         else:
             g, ps = " " * 14, " " * 27
-        print(f"  {arm:13s}{cells}{v.mean():>9.4f}{sd:>8.4f}{g}{ps}{verd:>9}")
+        flag = " *" if arm in POST_HOC else ""
+        print(f"  {arm:13s}{cells}{v.mean():>9.4f}{sd:>8.4f}{g}{ps}"
+              f"{verd:>9}{flag}")
         r[f"{key}_mean"], r[f"{key}_sd"] = float(v.mean()), float(sd)
 
 
@@ -247,6 +255,23 @@ def main():
         print(f"{arm:13s}{np.mean([x['acc'] for x in r['runs']]):>8.4f}"
               f"{np.mean([x['acc_hard'] for x in r['runs']]):>10.4f}   "
               + "".join(f"{z:>9.4f}" for z in lb))
+
+    # Every gain above is measured against `ours`, the param-matched masked
+    # control. If masking 6 columns handicaps it relative to the literal
+    # shipped 3-input gate, those gains are inflated by exactly that much, so
+    # the same contrast is shown against ours_pub.
+    if "ours" in res and "ours_pub" in res:
+        o, pub = res["ours"]["loss_mean"], res["ours_pub"]["loss_mean"]
+        print(f"\nBASELINE CHECK: ours {o:.4f} vs ours_pub {pub:.4f} "
+              f"-> masking the 6 columns costs {o - pub:+.4f} nats")
+        print(f"  {'arm':13s}{'vs ours':>10}{'vs ours_pub':>14}"
+              f"{'inflation':>11}")
+        for arm in TEST_ARMS:
+            if arm not in res:
+                continue
+            v = res[arm]["loss_mean"]
+            print(f"  {arm:13s}{o - v:>+10.4f}{pub - v:>+14.4f}"
+                  f"{(o - v) - (pub - v):>+11.4f}")
 
     print("\nEXPLORATORY, no bar: loss on NOISY+REVISED queries, sliced by "
           "prior writes to the QUERY address")

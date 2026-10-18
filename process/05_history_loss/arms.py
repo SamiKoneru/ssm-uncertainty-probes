@@ -64,13 +64,14 @@ import bayes as BY                                                # noqa: E402
 # order of the extra gate-input columns, after [tok, s1, s2]. The first five
 # are 04's history block; the sixth is its near-label oracle.
 HIST = ["h_cos", "h_cosmean", "h_ratio", "h_meane", "h_nvis", "o_memb",
-        "b_post"]
+        "b_post", "o_fresh"]
 # the six columns every arm in the PRIMARY set carries. `ours+bayes` carries a
 # seventh and is therefore 32 parameters larger; that mismatch is reported
 # rather than hidden, and `ours_pub` vs `ours` (192 params) calibrates how much
 # a handful of unused input weights is worth.
 N_EXTRA = 6
 N_BAYES = 7
+N_FRESH = 8
 
 ARMS = {
     #  arm           n_hist    keep (indices into HIST)
@@ -80,6 +81,9 @@ ARMS = {
     "ours+rate":    (N_EXTRA,  (3,)),                    # h_meane only
     "ours+oracle":  (N_EXTRA,  (0, 1, 2, 3, 4, 5)),      # near-label oracle
     "ours+bayes":   (N_BAYES,  (0, 1, 2, 3, 4, 5, 6)),   # TRUE ceiling
+    # added after seed 0, as CONTROLS that can only explain the gain AWAY
+    "ours+nvis":    (N_EXTRA,  (4,)),                    # visit counter alone
+    "ours+fresh":   (N_FRESH,  (7,)),                    # "ever written" bit
     "ours_pub":     (0,        ()),
 }
 
@@ -148,6 +152,9 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
             valset = torch.zeros(B, self.n_addr, self.n_addr, dtype=torch.bool,
                                  device=dev)
             zero_h = torch.zeros(B, self.n_hist, device=dev, dtype=dt)
+            if self.n_hist >= N_FRESH:
+                zero_h = zero_h.clone()
+                zero_h[:, N_FRESH - 1] = 0.0   # never written: the bit is 0
             if self.n_hist > N_EXTRA:
                 # b_post depends only on the token stream, so it is computed
                 # ONCE per forward rather than inside the recurrence. Guarded,
@@ -248,8 +255,12 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
         cnt[ar, addr] = p_cnt + 1
         valset[ar, addr, val] = True
         cols = [h_cos, h_cosmean, h_ratio, h_meane, h_nvis, o_memb]
-        if post is not None:
+        if self.n_hist >= N_BAYES:
             cols.append(post[:, t])
+        if self.n_hist >= N_FRESH:
+            # "has this address EVER been written", as one bit. Separates
+            # "how many times" (h_nvis) from "have I ever".
+            cols.append((~fresh).to(e.dtype))
         return torch.stack(cols, -1)
 
 
