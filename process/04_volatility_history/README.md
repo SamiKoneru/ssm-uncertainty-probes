@@ -1,10 +1,19 @@
 # 04_volatility_history - does long-term volatility add anything to beta?
 
-**ANSWER: NO. Not worth building.** The information gap is real and
-reproducible, but it is smaller than the headroom already sitting unused inside
-the three features the gate has, the one mechanism that was built for it
-already delivered the signal and bought no loss, and it would cost state as
-large as the memory itself.
+> **READ [`AUDIT.md`](AUDIT.md) FIRST.** A post-hoc audit retracted one headline
+> figure of this directory as a bug artifact, retracted one argument outright,
+> and found a third misapplied. The separability measurements all survived,
+> including a random-feature control. The RECOMMENDATION is weaker than this
+> README originally stated and the sections below are corrected accordingly.
+
+**ANSWER: a real but bounded information gap exists, and the separability
+evidence here does NOT establish that closing it is worth it.** Exact
+crosstalk-free per-address history adds +0.063 to +0.085 AUROC over everything
+the gate can compute with zero extra state, confirmed on a held-out eval stream.
+A near-label oracle ceiling sits at ~0.92 on every gate measured, so the gap is
+bounded. **Recommendation: do not build it** - but that is a judgement resting
+on the cost of `d_k x d_v` of new state plus one prior null loss result, not a
+measurement of loss on this question. The loss experiment was not run here.
 
 Pre-registered in [`PREREGISTRATION.md`](PREREGISTRATION.md) before any
 measurement. Conclusion and confirmation bars fixed in
@@ -51,15 +60,18 @@ read of the shipped gate's own [tok, s1, s2]
 so, as increments on the pooled scale:
 
 ```
-  nonlinearity on features the gate ALREADY HAS     +0.134   +0.137   zero new state
   two more zero-extra-state features                +0.003   +0.003   zero new state
   ALL exact per-address history                     +0.081   +0.082   d_k x d_v new state
   a near-label oracle on top of that                +0.028   +0.032   not a mechanism
 ```
 
-**The free nonlinear headroom is 1.7x everything history can buy.** That is the
-same answer `process/03` reached from the loss side ("the actual deficit was gate
-CAPACITY"), now reached independently from the information side.
+**RETRACTED** (see `AUDIT.md`): this table originally carried a row reading
+"nonlinearity on features the gate ALREADY HAS +0.134", with the claim that the
+free nonlinear headroom was 1.7x what history can buy. The linear-vs-nonlinear
+gap is real (0.676 to 0.810) but it is **already banked**: `gate_capacity.py`
+shows the shipped gate's own `3 -> 32 -> 32 -> 1` stack reaches 0.8127, so that
++0.134 is part of the published 5.5% and is not available to spend. Comparing an
+already-realised gain against a prospective one favoured my own conclusion.
 
 ## Every pre-registered bar, and the one that does not resolve
 
@@ -125,31 +137,34 @@ gate `sigmoid(W x + a1*s1 + a2*s2 + b)`, and reproduces the whole block:
 conditionings and two models, and nothing in the repo stated which model each
 number came from.
 
-### The finding that came out of chasing it: the gate manufactures its own signal
+### CORRECTED: the gate shapes its own features, but only a little
 
-Both models, same streams, same 6 batches, same conditioning
-(`logs/model_vs_task.log`):
+This section originally claimed separability goes 0.61 (legacy linear gate) to
+0.81 (shipped MLP), called that +0.19 "the strongest single argument against the
+volatility memory", and attributed it to beta shaping `S` shaping `(s1,s2)`.
+
+**The 0.61 was a bug artifact.** `signinit_test.py:88` replays the trained model
+with the INPUT-ONLY beta, dropping the a1 and a2 terms its own gate was trained
+with, and has no check against the model's forward pass. `logs/model_vs_task.log`
+inherited that replay. Corrected (`logs/audit_signinit_bug.log`): the legacy
+gate's `[s1,s2]` is **0.7787**, not 0.6161.
+
+The corrected comparison, all five zero-extra-state features, stream 777:
 
 ```
-gate                       loss    s1 pooled    s1 change   (s1,s2) gbm pooled
-legacy linear gate="both" 1.5882   0.487-0.491  0.737-0.752    0.604-0.616
-shipped MLP 3->32->32->1  1.5428   0.349-0.359  0.807-0.812    0.796-0.817
+gate                       loss      pooled AUROC
+legacy linear gate="both" 1.5882        0.7910
+shipped MLP seed 0        1.5786        0.8122
+shipped MLP seed 1        1.5732        0.8370
 ```
 
-**Separability in `(s1,s2)` is a property of the TRAINED GATE, not of the task.**
-`beta` shapes `S`, `S` shapes `(s1,s2)`, so a gate with a differentiated write
-policy manufactures a more separable feature distribution for itself. The legacy
-gate writes nearly the same beta everywhere (0.075 / 0.236 / 0.204 by class) and
-its features carry 0.61; the shipped gate writes 0.04 on NOISY and REVISED
-repeats, 0.17 and 0.26 on their changes, 0.44 on STABLE repeats, and its
-features carry 0.81.
+Still monotone in loss, so the effect is real and in the claimed direction, but
+**+0.046 across the full range of gate quality available here, not +0.19.** It
+is a small exploratory trend, not an argument that carries a recommendation.
 
-This is the strongest single argument against the volatility memory, and it is
-also why `signinit_test.py` concluded the gap was "INFORMATION-limited". That
-conclusion was correct about its own model. For the shipped gate it is false,
-and the information arrived because the POLICY improved, with no new state at
-all. A volatility memory would be bolting state onto a problem that a better
-policy dissolves.
+It also means `signinit_test.py`'s "the gap is INFORMATION-limited" conclusion
+was not even right about its own model: read correctly, that model's features
+carry 0.79.
 
 ### And the better the gate, the less history is worth. EXPLORATORY, n=3 models
 
@@ -280,20 +295,27 @@ the feature gate's 5.67%. Two findings bear on it:
                                            128   0.8112
    ```
 
+   ```
+   zero-state + exact history               32   0.9017   0.8929   0.8398
+   ```
+
    The gate's own architecture at its own shipped width reaches the full
    information content, **slightly beating the tree**, and 4x the width adds
    nothing. So the remaining oracle gap is not that the information is absent
    (0.81 of a 0.92 near-label ceiling), and not that a `3 -> 32 -> 32 -> 1` MLP
    cannot represent the required function. What the real gate lacks is the
    **learning signal**: it only ever sees the downstream language-model
-   gradient, never a class label, and 800 steps of that does not find the
-   function direct supervision finds. That is consistent with
+   gradient, never a class label. That is consistent with
    `validation/convergence.log`, where `ours` was still descending at step 3000.
 
-   **The actionable lever is therefore the learning signal, not new state and
-   not more width.** An auxiliary loss on the gate, a longer schedule, or a
-   better initialisation are all cheaper than a `d_k x d_v` volatility memory
-   and attack the part that is actually binding. Untested here.
+   **MISAPPLIED, see `AUDIT.md`.** I originally used this as an argument against
+   history. It does not discriminate: the same probe shows the gate-shaped MLP
+   reaches the history-augmented **0.9017** too, so the architecture represents
+   both mappings and "the gate cannot learn this from the LM gradient" applies
+   equally to both. It explains the oracle gap; it says nothing about whether
+   history is worth adding. The lever it does point at - an auxiliary loss on
+   the gate, a longer schedule, a better initialisation - is cheaper than a
+   `d_k x d_v` memory, and is untested here.
 
 ## Reportable anomalies
 
@@ -366,7 +388,17 @@ separability.py       TASK 1: the factorial, the labelling trap, the premise tes
 history_probe.py      TASK 2: history features and the pre-registered delta
 beta_policy.py        the beta-vs-residual direction anomaly, and its resolution
 gate_capacity.py      is the information reachable by a gate-shaped MLP?
-legacy_0476.py        the one reproduction that failed its bar
+legacy_0476.py        the reproduction that reproduced a BUG; see AUDIT.md
+model_vs_task.py      both models over the same streams. Its legacy column is
+                      the buggy replay; audit_signinit_bug.py supersedes it.
+AUDIT.md              the post-hoc audit: what survived and what did not
+audit_sanity.py       published-loss reproduction, random-feature control,
+                      NaN-branch and split checks
+audit_addressing.py   addressing and labelling against hand-built cases
+audit_trend.py        the legacy model's history delta, with a stated prediction
+audit_s2_swap.py      the repo's untested s2 -> ||Sk|| recommendation
+audit_ftok.py         is the token term an interaction or a leak? (neither)
+audit_signinit_bug.py isolates the input-only-beta replay bug
 logs/                 one log per run, streams 777 and 888
 ```
 

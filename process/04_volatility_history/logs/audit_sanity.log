@@ -1,0 +1,47 @@
+
+==========================================================================
+CHECK 1  does gated_seed0 reproduce the published result?
+==========================================================================
+published, 3 seeds, stream 12345:  gated 1.5428 / 0.6458,  baseline 1.6322
+
+model                   stream     loss      acc
+gated_seed0              12345   1.5446   0.6395
+gated_seed0                777   1.5786   0.6314
+gated_seed0                888   1.5868   0.6297
+gated_seed1              12345   1.5401   0.6491
+gated_seed1                777   1.5732   0.6397
+gated_seed1                888   1.5807   0.6383
+
+NOTE: no input-only baseline was ever trained in this directory,
+so the GAIN cannot be computed here, only the absolute loss
+compared against the published absolute loss.
+
+==========================================================================
+CHECK 2  is the +0.08 history gain capacity rather than information?
+==========================================================================
+
+comparison                                        base    with    delta      sd
+inst -> inst + 5 EXACT history features         0.8122  0.8929  +0.0807  0.0029
+inst -> inst + 5 RANDOM features                0.8122  0.8113  -0.0008  0.0011
+inst -> inst + a per-sequence constant          0.8122  0.7927  -0.0195  0.0039
+inst -> inst + position                         0.8122  0.8152  +0.0030  0.0029
+
+==========================================================================
+CHECK 3  NaN as a label-correlated tree branch
+==========================================================================
+  h_cos        non-finite on the analysed rows:      0   (0.000%)
+  h_cosmean    non-finite on the analysed rows:      0   (0.000%)
+  h_ratio      non-finite on the analysed rows:      0   (0.000%)
+  h_meane      non-finite on the analysed rows:      0   (0.000%)
+  h_nvis       non-finite on the analysed rows:      0   (0.000%)
+  o_memb       non-finite on the analysed rows:      0   (0.000%)
+  o_ndist      non-finite on the analysed rows:      0   (0.000%)
+  any non-finite at all on these rows means the tree could branch on
+  missingness; zero means it cannot.
+
+==========================================================================
+CHECK 4  does the by-sequence split separate sequences?
+==========================================================================
+  train sequences 86, test 86, OVERLAP 0
+  train rows 11111, test rows 10665, total 21776, disjoint: True
+  class balance train 0.4682 test 0.4935

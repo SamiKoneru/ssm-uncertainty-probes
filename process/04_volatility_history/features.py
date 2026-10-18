@@ -54,6 +54,71 @@ def load(tag, gate_width=32):
     return m, ck
 
 
+class Bookkeeper:
+    """Exact per-address history, model-independent.
+
+    Pulled out of `replay` so that a second model class can reuse the IDENTICAL
+    bookkeeping instead of a copy, which is how a copy drifts. Verified against
+    a naive single-sequence reimplementation in audit_addressing.py.
+    """
+
+    def __init__(self, B, dv):
+        self.B, self.dv = B, dv
+        self.ar = torch.arange(B)
+        self.last_e = torch.zeros(B, T.N_SYM, dv)
+        self.sum_e = torch.zeros(B, T.N_SYM, dv)
+        self.sum_ne = torch.zeros(B, T.N_SYM)
+        self.cnt = torch.zeros(B, T.N_SYM)
+        self.ndist = torch.zeros(B, T.N_SYM)
+        self.last_val = torch.full((B, T.N_SYM), -1, dtype=torch.long)
+        self.valset = torch.zeros(B, T.N_SYM, T.N_SYM, dtype=torch.bool)
+
+    def blank_row(self):
+        nan = torch.full((self.B,), float("nan"))
+        out = {n: nan for n in HIST + ORACLE}
+        out["wtype"] = torch.full((self.B,), float(UNSEEN))
+        return out
+
+    def step(self, addr, val, e, ne):
+        ar = self.ar
+        p_last = self.last_e[ar, addr]
+        p_sum = self.sum_e[ar, addr]
+        p_cnt = self.cnt[ar, addr]
+        p_ne = self.sum_ne[ar, addr]
+        p_val = self.last_val[ar, addr]
+        p_dist = self.ndist[ar, addr]
+        memb = self.valset[ar, addr, val].float()
+        fresh = p_cnt == 0
+
+        def blank(z):
+            return torch.where(fresh, torch.full_like(z, float("nan")), z)
+
+        out = {
+            "h_cos": blank(F.cosine_similarity(e, p_last, dim=-1, eps=1e-8)),
+            "h_cosmean": blank(
+                F.cosine_similarity(e, p_sum, dim=-1, eps=1e-8)),
+            "h_ratio": blank(
+                torch.log((ne + 1e-6) / (p_last.norm(dim=-1) + 1e-6))),
+            "h_meane": blank(p_ne / p_cnt.clamp_min(1)),
+            "h_nvis": p_cnt.clone(),
+            "o_memb": blank(memb),
+            "o_ndist": blank(p_dist),
+            "wtype": torch.where(
+                fresh, torch.full_like(p_cnt, float(UNSEEN)),
+                torch.where(p_val == val, torch.full_like(p_cnt, float(REPEAT)),
+                            torch.full_like(p_cnt, float(CHANGE)))),
+        }
+
+        self.last_e[ar, addr] = e
+        self.sum_e[ar, addr] = p_sum + e
+        self.sum_ne[ar, addr] = p_ne + ne
+        self.cnt[ar, addr] = p_cnt + 1
+        self.ndist[ar, addr] = p_dist + (1.0 - memb)
+        self.valset[ar, addr, val] = True
+        self.last_val[ar, addr] = val
+        return out
+
+
 @torch.no_grad()
 def replay(m, x):
     """x: [B, L+1] token stream. Returns a dict of [B, L] float arrays.
@@ -74,16 +139,7 @@ def replay(m, x):
     v = m.to_v(emb)
     beta_token = m.to_beta(ctx)[..., 0]
 
-    ar = torch.arange(B)
-    # per-sequence, per-address history. N_SYM addresses, one row per sequence.
-    last_e = torch.zeros(B, T.N_SYM, dv)
-    sum_e = torch.zeros(B, T.N_SYM, dv)
-    sum_ne = torch.zeros(B, T.N_SYM)
-    cnt = torch.zeros(B, T.N_SYM)
-    ndist = torch.zeros(B, T.N_SYM)
-    last_val = torch.full((B, T.N_SYM), -1, dtype=torch.long)
-    valset = torch.zeros(B, T.N_SYM, T.N_SYM, dtype=torch.bool)
-
+    bk = Bookkeeper(B, dv)
     cols = {n: [] for n in INST + HIST + ORACLE + ["beta", "wtype", "ne"]}
     S = emb.new_zeros(B, m.d_v, m.d_k)
     logits = []
@@ -108,53 +164,10 @@ def replay(m, x):
         cols["beta"].append(beta)
         cols["ne"].append(ne)
 
-        if t == 0:
-            # the address at t=0 is the zero pad, a constant slot shared by every
-            # sequence. Not a write to any symbol's address.
-            nan = torch.full((B,), float("nan"))
-            for n in HIST + ORACLE:
-                cols[n].append(nan)
-            cols["wtype"].append(torch.full((B,), float(UNSEEN)))
-        else:
-            addr = tokens[:, t - 1]
-            val = tokens[:, t]
-            p_last = last_e[ar, addr]
-            p_sum = sum_e[ar, addr]
-            p_cnt = cnt[ar, addr]
-            p_ne = sum_ne[ar, addr]
-            p_val = last_val[ar, addr]
-            memb = valset[ar, addr, val].float()
-            p_dist = ndist[ar, addr]
-            fresh = p_cnt == 0
-
-            def blank(z):
-                return torch.where(fresh, torch.full_like(z, float("nan")), z)
-
-            cols["h_cos"].append(blank(
-                F.cosine_similarity(e, p_last, dim=-1, eps=1e-8)))
-            cols["h_cosmean"].append(blank(
-                F.cosine_similarity(e, p_sum, dim=-1, eps=1e-8)))
-            # log so the feature is scale-sane for a linear model. Monotone,
-            # so single-feature AUROC and any tree are unaffected.
-            cols["h_ratio"].append(blank(
-                torch.log((ne + 1e-6) / (p_last.norm(dim=-1) + 1e-6))))
-            cols["h_meane"].append(blank(p_ne / p_cnt.clamp_min(1)))
-            cols["h_nvis"].append(p_cnt.clone())
-            cols["o_memb"].append(blank(memb))
-            cols["o_ndist"].append(blank(p_dist))
-            wt = torch.where(fresh, torch.full_like(p_cnt, float(UNSEEN)),
-                             torch.where(p_val == val,
-                                         torch.full_like(p_cnt, float(REPEAT)),
-                                         torch.full_like(p_cnt, float(CHANGE))))
-            cols["wtype"].append(wt)
-
-            last_e[ar, addr] = e
-            sum_e[ar, addr] = p_sum + e
-            sum_ne[ar, addr] = p_ne + ne
-            cnt[ar, addr] = p_cnt + 1
-            ndist[ar, addr] = p_dist + (1.0 - memb)
-            valset[ar, addr, val] = True
-            last_val[ar, addr] = val
+        row = (bk.blank_row() if t == 0
+               else bk.step(tokens[:, t - 1], tokens[:, t], e, ne))
+        for n in HIST + ORACLE + ["wtype"]:
+            cols[n].append(row[n])
 
         S = S - beta[:, None, None] * e.unsqueeze(-1) * kt.unsqueeze(1)
         logits.append(m.head(m.norm(torch.bmm(S, qt.unsqueeze(-1)).squeeze(-1))))

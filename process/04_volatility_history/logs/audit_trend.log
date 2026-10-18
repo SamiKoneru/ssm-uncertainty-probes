@@ -1,0 +1,14 @@
+PREDICTION, stated before the numbers below:
+  the claim 'better gate -> less history value' predicts the legacy
+  model's history delta is the LARGEST of the three, since it is the
+  least separable instantaneously and so has the most room.
+  delta_legacy > +0.0807 (seed 0) > +0.0634 (seed 1)
+
+model                         inst   +hist    delta      sd   +oracle
+legacy linear gate=both     0.7910  0.8754  +0.0845  0.0038    0.9164
+shipped MLP seed 0          0.8122  0.8929  +0.0807  0.0029    0.9206
+shipped MLP seed 1          0.8370  0.9004  +0.0634  0.0030    0.9231
+
+  predicted ordering  legacy > seed0 > seed1
+  measured            +0.0845  +0.0807  +0.0634
+  VERDICT: trend SURVIVES (n=3, still exploratory)
