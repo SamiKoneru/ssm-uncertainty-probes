@@ -1,0 +1,17 @@
+A11.1b  model gated_seed0 (seed 0)  stream 505  rows 22119
+
+  cross-entropy of the trajectory each replay produces:
+    correct (what it was trained with)  1.6028
+    buggy   (gate MLP dropped)          1.7213   +0.1185
+
+  pooled NOISY vs REVISED separability read off each trajectory:
+  feature set                      correct     buggy     shift
+  [s1, s2]                          0.8090    0.7728   -0.0362
+  [tok, s1, s2]                     0.8059    0.7792   -0.0267
+  all five zero-state               0.8105    0.7729   -0.0376
+
+  04's legacy model, from its AUDIT.md: buggy 0.6161 -> correct 0.7787 on [s1,s2], a shift of -0.1626.
+  The sign and the order of magnitude are what matter here: a
+  wrong-beta replay changes the trajectory, so it changes the
+  separability of features read off it. Exact agreement is not
+  expected and is not claimed - this is a different model.

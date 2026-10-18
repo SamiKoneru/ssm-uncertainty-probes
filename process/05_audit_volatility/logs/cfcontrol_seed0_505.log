@@ -1,0 +1,35 @@
+A1b-control  model gated_seed0  stream 505  3 held-out batches (the same ones A1b used)
+
+  CONSTANT-beta sweep on the frozen model:
+      beta        CE      acc
+    0.0500    1.6573   0.6252
+    0.1000    1.6124   0.6300
+    0.2000    1.5751   0.6414
+    0.3123    1.5693   0.6500
+    0.4000    1.5781   0.6574
+    0.5259    1.6074   0.6665
+    0.6000    1.6331   0.6719
+    0.7000    1.6740   0.6733
+    0.7130    1.6796   0.6733
+    0.8000    1.7162   0.6733
+    0.9000    1.7547   0.6733
+    1.0000    1.7870   0.6734
+
+  best constant on CE  beta=0.3123  CE 1.5693
+  best constant on acc beta=1.0000  acc 0.6734
+
+  each A1b policy against a constant AT ITS OWN MEAN beta:
+  policy                            mean b       CE  const CE  CE edge     acc  const acc  acc edge
+  the gate's own beta (shipped)     0.3123   1.4648    1.5693  +0.1045  0.6596     0.6500   +0.0096
+  best constant beta                0.5325   1.6095    1.6074  -0.0021  0.6673     0.6665   +0.0008
+  3 feats, linear                   0.6683   2.1067    1.6740  -0.4327  0.6036     0.6733   -0.0697
+  3 feats, GBT                      0.7811   1.5927    1.7162  +0.1235  0.6596     0.6733   -0.0137
+  5 zero-state, GBT                 0.8047   1.6176    1.7162  +0.0986  0.6690     0.6733   -0.0043
+  5 zero-state + history, GBT       0.5259   1.5418    1.6074  +0.0656  0.6690     0.6665   +0.0025
+  TRUE CLASS LABEL (oracle)         0.7103   1.4806    1.6796  +0.1990  0.6754     0.6733   +0.0021
+  per-write beta* (non-causal)      0.7130   1.4695    1.6796  +0.2101  0.7009     0.6733   +0.0276
+
+  'edge' is the policy minus the matched constant, positive =
+  the policy's STRUCTURE helped beyond its mean beta. The matched
+  constant is the nearest grid point, which is exact for the gate
+  (0.3123), the history policy (0.5259) and beta* (0.7130).

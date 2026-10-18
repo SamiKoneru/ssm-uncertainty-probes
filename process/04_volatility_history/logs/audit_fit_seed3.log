@@ -1,0 +1,2 @@
+training gated_seed3, 800 steps, 2 threads
+  step    0  loss 3.7586  4s

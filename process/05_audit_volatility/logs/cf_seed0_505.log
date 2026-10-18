@@ -8,3 +8,41 @@ A1b.0  control: the reimplementation must reproduce the shipped model
   max |feature column difference| over all 10 columns 0.000e+00
   max |beta difference| 0.000e+00
   PASS
+
+  fitted on 43413 writes with a defined target
+  best constant beta 0.5325
+  per-class beta  STABLE 1.0000  NOISY 0.1618  REVISED 0.6382
+
+==============================================================================
+A1b.1  actual cross-entropy on held-out sequences, frozen model, beta substituted
+==============================================================================
+  batch 6 done
+  batch 7 done
+  batch 8 done
+
+  beta policy                                     CE     acc   mean b  CE gain vs const
+  the gate's own beta (shipped)               1.4648  0.6596   0.3123           +0.1447
+  best constant beta                          1.6095  0.6673   0.5325           +0.0000
+  3 feats, linear                             2.1067  0.6036   0.6683           -0.4973
+  3 feats, GBT                                1.5927  0.6596   0.7811           +0.0168
+  5 zero-state, GBT                           1.6176  0.6690   0.8047           -0.0082
+  5 zero-state + history, GBT                 1.5418  0.6690   0.5259           +0.0676
+  TRUE CLASS LABEL (oracle)                   1.4806  0.6754   0.7103           +0.1289
+  per-write beta* (non-causal ceiling)        1.4695  0.7009   0.7130           +0.1400
+
+  per-batch CE spread (max-min) for the shipped gate: 0.0427
+
+==============================================================================
+A1b.2  the pre-registered loss bars
+==============================================================================
+  CE(5 feats) - CE(5 feats + history)     +0.0758   <- history's loss gain
+  CE(3 linear) - CE(3 GBT)                +0.5141   <- nonlinearity's loss gain
+  repo seed sd on loss: 0.0026 to 0.0039
+
+  bar (b) COLLAPSES on loss: g_hist >= 0.0039 AND g_hist >= g_non
+       -> does not fire
+  bar (d)'s prediction HOLDS: g_hist <= 0.0013
+       -> does not fire
+
+  context: total CE on the table from beta alone (const -> non-causal per-write optimum) +0.1400
+           the shipped gate captures +0.1447 of that

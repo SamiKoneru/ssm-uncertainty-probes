@@ -1,0 +1,11 @@
+training gated_seed1, 800 steps, 2 threads
+  step    0  loss 3.9004  1s
+  step  100  loss 1.6088  223s
+  step  200  loss 1.7698  527s
+  step  300  loss 1.4151  776s
+  step  400  loss 1.5850  1135s
+  step  500  loss 1.3257  1383s
+  step  600  loss 1.4895  1683s
+  step  700  loss 1.5690  2065s
+  step  799  loss 1.7475  2474s
+saved /Users/skon/Desktop/Projects/ssm-uncertainty-probes/.claude/worktrees/festive-khorana-2d0221/process/04_volatility_history/checkpoints/gated_seed1.pt

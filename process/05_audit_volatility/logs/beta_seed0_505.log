@@ -47,3 +47,64 @@ A1.1  beta quality on 04's primary row set (NOISY|REVISED, seen)
   return X @ coef_ + self.intercept_
 /Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_base.py:280: RuntimeWarning: invalid value encountered in matmul
   return X @ coef_ + self.intercept_
+  n_train 9203  n_test 9757   best constant beta 0.3659
+
+  policy                                   RER       CER   mean beta
+  best constant beta                   +0.0000   +0.0000      0.3659
+  3 feats, linear                      +0.0064   -0.0130      0.3489
+  3 feats, GBT                         +0.0082   -0.0415      0.3524
+  5 zero-state, GBT                    +0.0096   -0.0423      0.3477
+  5 zero-state + history, GBT          +0.0212   -0.0044      0.3560
+  TRUE CLASS LABEL (oracle)            +0.0684   +0.1598      0.3763
+  per-write beta* (cheating)           +0.3361   +1.0000      0.4689
+  the trained gate's own beta          -0.0359   -0.3813      0.1239
+
+  gain_nonlin (linear -> GBT on the 3 features)   +0.0018
+  gain_hist   (zero-state -> + history)            +0.0116
+  R_beta = gain_hist / gain_nonlin                 +6.4571
+  bootstrap sd: gain_nonlin 0.0022   gain_hist 0.0025   R_beta 121.7068
+  R_beta 95% bootstrap interval [-52.113, +49.734]
+
+  CREDIT-ASSIGNMENT GAP, measured not inferred:
+    best policy on the gate's own 3 features    +0.0082 RER
+    the trained gate's actual beta              -0.0359 RER
+    gap the gate leaves on its own features     +0.0440
+
+==============================================================================
+A1.5  does history identify the class WHERE beta has leverage?
+==============================================================================
+
+    prior    rows  share of     mean   Bayes  hist gain  hist gain
+   visits          leverage    ||e||   AUROC   beta RER x leverage
+        1    1433    0.1575   7.8555  0.6875   -0.00149   -0.00023
+        2    1223    0.1293   7.7006  0.7804   -0.00027   -0.00003
+      3-4    1966    0.2042   7.6374  0.8923   +0.01483   +0.00303
+      5-8    2478    0.2521   7.5947  0.9792   +0.01614   +0.00407
+       9+    2657    0.2569   7.4603  0.9991   +0.01754   +0.00451
+
+  'hist gain beta RER' is history's beta-error reduction inside
+  that bucket, as a fraction of the SAME global best-constant
+  baseline, so the column is additive across buckets.
+
+  and the same leverage split by write type:
+    repeat   rows    8763  share of leverage  0.3282  mean ||e||   6.4920
+    change   rows   10197  share of leverage  0.6718  mean ||e||   8.5862
+
+  share_hist denominator RER(class) - RER(5 feats)   +0.0588
+  share_hist = gain_hist / that               +0.1975
+
+==============================================================================
+A1.2  04's OWN metric on exactly these rows and this split
+==============================================================================
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:200: RuntimeWarning: divide by zero encountered in matmul
+  raw_prediction = X @ weights + intercept
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:200: RuntimeWarning: overflow encountered in matmul
+  raw_prediction = X @ weights + intercept
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/linear_model/_linear_loss.py:200: RuntimeWarning: invalid value encountered in matmul
+  raw_prediction = X @ weights + intercept
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
