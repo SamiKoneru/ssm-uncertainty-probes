@@ -236,11 +236,18 @@ def main():
     ap.add_argument("--stream", type=int, default=505)
     ap.add_argument("--batches", type=int, default=6)
     ap.add_argument("--mc", type=int, default=400000)
+    ap.add_argument("--skip-selftest", action="store_true",
+                    help="the self-tests are stream-independent, so they are "
+                         "worth running once rather than per stream")
     a = ap.parse_args()
     torch.set_num_threads(2)
 
-    hdr("A10.0  self-tests on the likelihoods")
-    self_test(mc=a.mc)
+    if a.skip_selftest:
+        print("A10.0  self-tests SKIPPED (stream-independent; see "
+              "logs/bayes_505.log)")
+    else:
+        hdr("A10.0  self-tests on the likelihoods")
+        self_test(mc=a.mc)
 
     hdr(f"A10.1  the exact Bayes ceiling, stream {a.stream}")
     d = collect(a.stream, batches=a.batches)
