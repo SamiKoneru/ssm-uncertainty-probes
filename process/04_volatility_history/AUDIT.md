@@ -198,12 +198,59 @@ worthless.** "Not worth building" is a judgement about cost against a prior null
 result, and I presented it with more support than it has. The loss experiment is
 the decider and it was correctly identified as the gap.
 
-## What this audit did not check
+## RETRACTED 3: "~0.92 is a property of the task"
 
-- whether the ORACLE feature set is a sufficient statistic for the per-address
-  history. It is close by construction, but the true Bayes ceiling given the
-  full value multiset was not computed, so 0.92 is a measured ceiling for these
-  features, not a proof.
+This section originally listed the Bayes ceiling as unchecked and said 0.92 was
+"a measured ceiling for these features, not a proof". The session auditing this
+directory computed it, and `audit_bayes_ceiling.py` then reproduced it here from
+an independent analytic derivation off `task.py` alone, with a normalisation
+self-check that is exact:
+
+```
+                                               stream 777   stream 888
+EXACT Bayes AUROC given the value history          0.9449       0.9469
+  (the other session reports 0.9479 by its own route)
+measured in 04 with the 'near-label oracle'        0.9206       0.9154
+measured in 04 with history features               0.8929       0.8830
+all five zero-extra-state features                 0.8122       0.8015
+```
+
+**So 0.92 is a property of MY FEATURE SET, not of the task.** The true ceiling
+for any per-address history mechanism is ~0.945, and I called the 0.92 "the one
+firm bound here" and "a property of the TASK" in both this file and the README.
+Both wrong. The oracle features are not near-label either: on their own they
+reach 0.785, which the other session measures as a 0.165 gap to Bayes.
+
+Consequence, and it runs AGAINST this directory's recommendation: the headroom
+available to history is **+0.133** (0.812 to 0.945), not the +0.109 I reported,
+and my history feature set captured 0.081 of it, about 61%. The upside I
+measured was roughly a fifth too small.
+
+What the exact ceiling also reveals, which nothing here had noticed:
+identifiability is steeply dependent on how many times the address has been
+written.
+
+```
+prior visits        n    Bayes AUROC
+           1     3179         0.6868
+           2     2741         0.7858
+         3-4     4392         0.8896
+         5-8     5526         0.9773
+         9+      5938         0.9997
+```
+
+Early writes are genuinely ambiguous even to Bayes; once an address has 5 or
+more prior writes the class is nearly determined. And **9.3 to 10.2% of writes
+have `P(v|NOISY) = 0` exactly**, because more than `N_OPT = 4` distinct values
+have been seen there, so those are provably REVISED. Verified: every one of them
+is in fact REVISED.
+
+That gives the per-write beta question a shape nobody here had stated: a
+volatility memory would be useless on an address's first couple of writes and
+near-perfect after five, so its value depends entirely on how the task's writes
+are distributed over visit counts, which this directory never reported either.
+
+## What this audit did not check
 - the "rate memory recovered 93%" comparison still crosses models and streams.
   Settling it needs the `rate_delta` model retrained and measured alongside.
 - anything about loss.
