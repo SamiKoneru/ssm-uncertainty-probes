@@ -1,0 +1,90 @@
+model gated_seed1 (seed 1)   eval stream 777, 6 batches of 32
+loss 1.5732   acc 0.6397
+history features are defined only on writes to an address written
+before, so every row below is restricted to those.
+
+==========================================================================
+PART 1  predicted direction: is cos(e_t, e_prev) higher on REVISED?
+==========================================================================
+pre-registered prediction: YES. The other direction gets reported as
+a direction error, not as a success.
+
+feature       NOISY mean  REVISED mean                 direction
+h_cos             0.0212        0.5730REVISED higher (predicted)
+h_cosmean         0.0636        0.2984REVISED higher (predicted)
+h_ratio          -0.0223       -0.0344              NOISY higher
+h_meane           8.5587        8.0408              NOISY higher
+h_nvis            7.0755        6.3143              NOISY higher
+o_memb            0.7138        0.6712              NOISY higher
+o_ndist           2.7233        2.7243REVISED higher (predicted)
+
+==========================================================================
+PART 2  single-feature AUROC, NOISY vs REVISED, by stratum
+==========================================================================
+The KILL for 'it is only a proxy for write type': a feature at chance
+inside BOTH change and repeat strata carries nothing new.
+
+feature          all seen writes         CHANGE only         REPEAT only
+                    AUROC      n        AUROC      n        AUROC      n
+h_cos              0.7412  21776       0.7404  11750       0.4646  10026
+h_cosmean          0.6190  21776       0.3107  11750       0.5689  10026
+h_ratio            0.4869  21776       0.7345  11750       0.5869  10026
+h_meane            0.3017  21776       0.3003  11750       0.3051  10026
+h_nvis             0.4762  21776       0.4780  11750       0.4768  10026
+o_memb             0.4787  21776       0.2210  11750       0.5000  10026
+o_ndist            0.4328  21776       0.4324  11750       0.4368  10026
+f_s1               0.3442  21776       0.7956  11750       0.2680  10026
+f_s2               0.6005  21776       0.2546  11750       0.5567  10026
+f_nstored          0.4011  21776       0.4074  11750       0.3923  10026
+pos                0.4950  21776       0.4945  11750       0.4946  10026
+
+==========================================================================
+PART 3  THE PRE-REGISTERED PRIMARY METRIC
+==========================================================================
+paired on identical rows and identical by-sequence split; bootstrap SD
+is of the DELTA, resampling sequences.
+
+comparison                                      base    with    delta      sd  n_test
+inst -> inst + history                        0.8370  0.9004  +0.0634  0.0030   10665
+inst -> inst + h_cos only                     0.8370  0.8485  +0.0116  0.0013   10665
+inst -> inst + h_meane only (rate memory)     0.8370  0.8713  +0.0344  0.0042   10665
+inst + hist -> + ORACLE membership            0.9004  0.9231  +0.0227  0.0023   10665
+inst -> inst + ORACLE membership              0.8370  0.8777  +0.0407  0.0030   10665
+inst -> inst + position (control)             0.8370  0.8369  -0.0000  0.0027   10665
+
+  bars:  PASS  delta >= +0.05 AND absolute >= 0.70
+         KILL  delta <  +0.02  OR absolute < 0.60
+
+==========================================================================
+PART 4  the same, restricted to CHANGE writes (where beta matters most)
+==========================================================================
+
+comparison                                      base    with    delta      sd  n_test
+inst -> inst + history                        0.8104  0.9015  +0.0911  0.0045    5675
+inst -> inst + h_cos only                     0.8104  0.8303  +0.0199  0.0035    5675
+inst -> inst + h_meane only (rate memory)     0.8104  0.8680  +0.0577  0.0049    5675
+inst + hist -> + ORACLE membership            0.9015  0.9141  +0.0125  0.0021    5675
+inst -> inst + ORACLE membership              0.8104  0.8511  +0.0407  0.0040    5675
+inst -> inst + position (control)             0.8104  0.8149  +0.0045  0.0037    5675
+
+==========================================================================
+PART 5  is the class label even recoverable from per-address history?
+==========================================================================
+If the near-label oracle features cannot separate the classes at
+L=256 (about 6 visits per address), then 'the class label IS each
+key's long-term behaviour' is false at this length, and NO history
+mechanism can reach the per-class oracle.
+  all seen writes   oracle alone         AUROC 0.7847 +/- 0.0072   n_test 10665
+  all seen writes   oracle + history     AUROC 0.9241 +/- 0.0044   n_test 10665
+  all seen writes   everything           AUROC 0.9231 +/- 0.0044   n_test 10665
+  CHANGE only       oracle alone         AUROC 0.8467 +/- 0.0048   n_test 5675
+  CHANGE only       oracle + history     AUROC 0.9117 +/- 0.0043   n_test 5675
+  CHANGE only       everything           AUROC 0.9141 +/- 0.0042   n_test 5675
+  REPEAT only       oracle alone         AUROC 0.7201 +/- 0.0100   n_test 5075
+  REPEAT only       oracle + history     AUROC 0.8606 +/- 0.0086   n_test 5075
+  REPEAT only       everything           AUROC 0.8564 +/- 0.0091   n_test 5075
+
+  visits per address, by class (seen writes):
+    STABLE   mean prior visits 53.85   mean distinct values seen 1.00
+    NOISY    mean prior visits 7.08   mean distinct values seen 2.72
+    REVISED  mean prior visits 6.31   mean distinct values seen 2.72

@@ -1,0 +1,141 @@
+model gated_seed1 (seed 1, 800 steps)   eval stream 777, 6 batches of 32
+loss 1.5732   acc 0.6397   rows 49152   published on 12345: 1.5428 / 0.6458
+
+==========================================================================
+PART 1  write-type composition by class of the WRITE ADDRESS
+==========================================================================
+repo claim (process/03/README.md:73-75): REVISED = 65% repeats + 35% changes,
+            NOISY = '~all changes'
+
+class       n writes   unseen   repeat   change  repeat|seen
+STABLE         23397    0.081    0.919    0.000        1.000
+NOISY          13219    0.144    0.239    0.616        0.280
+REVISED        12344    0.152    0.556    0.292        0.656
+
+==========================================================================
+PART 1b  ANOMALY noticed in passing: absorbing states in the task
+==========================================================================
+task.py draws succ = rng.integers(N_SYM, size=N_SYM), so succ[s] == s
+with probability 1/40 per symbol, and a STABLE or REVISED symbol that points at
+itself is ABSORBING: the walk reaches it and never leaves. A NOISY symbol whose
+option set contains itself is absorbing with probability 1/4 per step. So some
+fraction of each sequence is a constant tail with a trivial prediction.
+
+  per-sequence max prior-visit count to a single address:
+    median 28   mean 68.8   max 254   (L = 256 writes per sequence)
+    sequences where one address takes >  20 of the writes: 0.797
+    sequences where one address takes >  60 of the writes: 0.276
+    sequences where one address takes > 120 of the writes: 0.214
+  share of ALL writes that land on their sequence's single most-visited address: 0.230 have >20 prior visits
+
+==========================================================================
+PART 2  does beta matter on repeat writes?  ||e|| by write type
+==========================================================================
+if ||e|| on repeats were ~0, beta would multiply zero there and the
+pooled conditioning would be harmless dilution rather than a trap
+
+write type          n  mean ||e||    median  mean beta  mean beta*||e||
+unseen           5692      9.2773    9.2219     0.3093           2.8795
+repeat          31518      4.9515    5.8070     0.0158           0.0877
+change          11750      8.8378    9.1593     0.2207           2.0492
+
+==========================================================================
+PART 3  the factorial.  AUROC NOISY vs REVISED, single raw features
+==========================================================================
+AUROC > 0.5 means the feature reads HIGHER on REVISED.
+
+conditioning                 n        f_s1        f_s2   f_nstored        f_nv       f_tok        beta
+all seen writes          21776      0.3442      0.6005      0.4011      0.4876      0.5008      0.3511
+CHANGE writes only       11750      0.7956      0.2546      0.4074      0.4951      0.4945      0.7757
+REPEAT writes only       10026      0.2680      0.5567      0.3923      0.4784      0.4900      0.2983
+every position t>0       25563      0.3901      0.5703      0.4245      0.4858      0.5014      0.3950
+
+==========================================================================
+PART 3b  the labelling trap: same thing labelled by class(x_t)
+==========================================================================
+class(x_t) labels a write by the class of the VALUE token, not the
+address. This is the known wrong labelling.
+
+conditioning                 n        f_s1        f_s2   f_nstored        f_nv       f_tok        beta
+all seen writes          21713      0.5116      0.4922      0.4968      0.5208      0.5043      0.5127
+CHANGE writes only        7941      0.5225      0.4790      0.4862      0.5179      0.4954      0.5224
+REPEAT writes only       13772      0.5208      0.4919      0.5018      0.5224      0.5093      0.5239
+every position t>0       25533      0.5108      0.4945      0.4980      0.5217      0.5025      0.5113
+
+==========================================================================
+PART 3c  the 'seen' mask: the task's own array describes x_t, not the address
+==========================================================================
+every earlier script masked with sn (about x_t) while labelling with
+class(x_{t-1}). These are the three masks side by side, s1 only.
+  sn_task (as used)      n= 21141   s1 AUROC 0.3340
+  sn_task shifted        n= 21776   s1 AUROC 0.3442
+  exact bookkeeping      n= 21776   s1 AUROC 0.3442
+
+==========================================================================
+PART 4  replicating signinit_test's procedure (the 0.476)
+==========================================================================
+3-way gradient-boosted classifier on (s1,s2), scored by P(REVISED),
+token-level 50/50 split, masked by the task's sn array. Exactly as
+archive/failed_features/signinit_test.py:100-110 does it.
+
+  3-way accuracy 0.7699   (chance 0.5135)
+    AUROC STABLE   vs rest: 0.9617
+    AUROC NOISY    vs rest: 0.9300
+    AUROC REVISED  vs rest: 0.8603
+    AUROC NOISY vs REVISED only: 0.7572   <- signinit reported 0.4763
+
+  and the SAME features scored as a 2-class problem trained on the
+  NOISY-vs-REVISED contrast directly, by-sequence split:
+    all seen writes        AUROC 0.8293 +/- 0.0056   (n_test 10665)
+    CHANGE writes only     AUROC 0.8006 +/- 0.0058   (n_test 5675)
+    REPEAT writes only     AUROC 0.7093 +/- 0.0119   (n_test 5075)
+
+==========================================================================
+PART 5  THE PREMISE TEST (pre-registered)
+==========================================================================
+Pooled over all seen writes, which is where the gate must act without
+being told whether the write is a repeat or a change.
+  >= 0.80  premise DIES, instantaneous info is close to sufficient
+  <= 0.70  premise SUPPORTED, there is an information gap
+
+feature set                             kind    AUROC   boot sd   n_test
+shipped gate [tok, s1, s2]             logit   0.6933    0.0083    10665
+shipped gate [tok, s1, s2]               gbm   0.8320    0.0055    10665
+all zero-state [+ ||Sk||, ||v||]       logit   0.7767    0.0074    10665
+all zero-state [+ ||Sk||, ||v||]         gbm   0.8370    0.0055    10665
+
+  for reference, the same classifier on CHANGE writes only:
+shipped gate [tok, s1, s2]               gbm   0.7945    0.0057     5675
+all zero-state [+ ||Sk||, ||v||]         gbm   0.8104    0.0059     5675
+
+==========================================================================
+PART 6  EXPLORATORY, added after the pre-registration was written
+==========================================================================
+Reason it was added, stated before the numbers below were produced:
+the pre-registration treats 'instantaneous' as the opposite of 'history', but
+S_{t-1} IS a per-address history summary. Under the low beta this gate learns,
+a NOISY address holds a weighted AVERAGE of its option set, so ||S k|| is
+shrunk relative to ||v||, while a REVISED address holds approximately one
+value, so ||S k|| ~ ||v||. The occupancy ratio ||S k|| / ||v|| is therefore a
+ZERO-EXTRA-STATE readout of exactly the time structure this session assumed
+only a new memory could see. A tree cannot form a ratio from the two norms
+given separately, so it is given explicitly.
+
+This is the s3 = ||stored||/||v|| of archive/failed_features/s3_test.py,
+which was filed as null as a GATE INPUT. Nothing in the repo measured its
+separability under correct conditioning.
+
+PART 5 above is the pre-registered result and stands as reported.
+
+feature set                             kind    AUROC   boot sd   n_test
+  [all seen writes]
+all zero-state (pre-registered)          gbm   0.8370    0.0055    10665
++ occupancy ratio ||Sk||/||v||           gbm   0.8343    0.0057    10665
+  [CHANGE writes only]
+all zero-state (pre-registered)          gbm   0.8104    0.0059     5675
++ occupancy ratio ||Sk||/||v||           gbm   0.8073    0.0064     5675
+
+  single-feature AUROC of the ratio alone:
+    all seen writes        AUROC 0.4046   n 21776
+    CHANGE writes only     AUROC 0.4141   n 11750
+    REPEAT writes only     AUROC 0.3971   n 10026

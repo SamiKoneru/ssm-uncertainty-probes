@@ -151,6 +151,50 @@ and the information arrived because the POLICY improved, with no new state at
 all. A volatility memory would be bolting state onto a problem that a better
 policy dissolves.
 
+### And the better the gate, the less history is worth. EXPLORATORY, n=3 models
+
+A second training seed was run as a stability check. It came out BETTER on loss,
+MORE separable instantaneously, and gained LESS from history. Lining up all
+three models measured here, every column is monotone:
+
+```
+model                        loss     (s1,s2) pooled   history delta
+legacy linear gate="both"  1.5882          0.616              -
+shipped MLP seed 0         1.5786          0.810         +0.0807
+shipped MLP seed 1         1.5732          0.832         +0.0634
+```
+
+(losses on stream 777; the legacy figure is its logged 12345 loss, so it is not
+strictly comparable, but it is the worst model by a wide margin on any stream.)
+
+**EXPLORATORY**: three models, no seeds behind any single point, and the
+ordering was noticed after the fact rather than predicted. But the direction is
+the one the mechanism above predicts, and it is the direction that matters for
+the decision: the marginal value of a volatility memory SHRINKS as the gate
+improves. Confirming it needs a proper seed sweep with the separability and the
+loss read off the same runs, which was not done.
+
+### Seed stability of the two headline numbers
+
+```
+                              seed 0 / 777   seed 0 / 888   seed 1 / 777
+pooled, shipped features            0.8095         0.7983         0.8320
+pooled, all zero-state              0.8122         0.8015         0.8370
+  the same, linear read             0.6760         0.6613         0.6933
+s1 alone, CHANGE writes             0.8073         0.8121         0.7956
+history delta                      +0.0807        +0.0815        +0.0634
+  of which h_cos                   +0.0168        +0.0180        +0.0116
+  of which h_meane                 +0.0361        +0.0351        +0.0344
+near-label oracle ceiling           0.9206         0.9154         0.9231
+position control                   +0.0030        +0.0042        -0.0000
+```
+
+The history delta clears its +0.05 bar on all three. `h_meane` beats `h_cos` on
+all three. The pre-registered 0.80 premise bar is cleared by two of three, which
+is the same indecision reported above, now across training seeds as well as eval
+streams. **The 0.80 is not a fact about the task.** It is a fact about one
+trained gate, and the spread across three gates here is 0.61 to 0.83.
+
 Separately, **`logs/signinit.log:15` is a trap**: `AUROC NOISY vs rest: 0.8345`
 is a different contrast from the 0.834 in the READMEs, which is NOISY vs
 REVISED on change writes. The agreement to three decimals is a coincidence.
