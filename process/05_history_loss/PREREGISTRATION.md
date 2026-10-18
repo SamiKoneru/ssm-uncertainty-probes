@@ -451,3 +451,74 @@ The primary metric, the +0.0064 bar, the validity gate, 3 seeds, the published
 protocol, eval streams 5150 and 5151, and the existing six arms. My recorded
 prediction of no gain stands, and it now rests on less than it did, so a gain
 is a live outcome and will be reported as one if it happens.
+
+---
+
+## APPENDED 2026-10-18 14:50, fourth amendment. MOTIVATED BY SEED-0 RESULTS
+
+**This one is different from the three above and the difference is the whole
+point.** Appendices 1 to 3 were written blind. This one was written after
+seeing seed 0 of stream 5150, which means everything it adds is
+**EXPLORATORY** and nothing in it may be treated as confirmatory.
+
+It is admissible under this repo's rules for one reason, stated so it can be
+checked: **every addition here can only make my headline claim smaller.** The
+two new arms are controls for an alternative explanation of a gain I have
+already seen. If they fire, the gain is explained away. If they do not, the
+headline is unchanged. No bar is relaxed, no metric is swapped, and no arm
+that could inflate a gain is added.
+
+### What seed 0 showed, and the problem with it
+
+`ours+hist` beat `ours` by +0.0611 nats, 9.5x the pre-registered bar. But the
+gain by prior writes to the query address runs:
+
+```
+  0 (fresh)  +0.0707      Bayes identifiability of the class:  n/a
+          1  +0.2723                                         0.687
+          2  +0.1196                                         0.786
+        3-4  +0.0406                                         0.890
+        5-8  +0.0159                                         0.977
+         9+  -0.0126                                        0.9997
+```
+
+The gain is concentrated where the address's class is **least** identifiable
+from its history, is slightly **negative** where it is almost perfectly
+identifiable, and is positive on **fresh** writes where by construction there
+is no history at all. That is backwards for a long-term-volatility story.
+
+A simpler explanation fits it better: `h_nvis = log1p(visit count)` is an
+unblanked **per-address visit counter**, and the other four columns being
+exactly 0.0 is itself a first-write indicator. "This address is new, do not
+overwrite confidently yet" would produce exactly this profile. A visit
+counter costs `d_k` of state, one scalar per address, not the `d_k x d_v`
+residual store 04 priced the mechanism at, and it has nothing to do with
+volatility.
+
+### Two control arms
+
+```
+ours+nvis    [tok, s1, s2, 0,0,0,0,h_nvis,0]    62,250, EXACTLY param-matched
+ours+fresh   [tok, s1, s2, 0 x 7, o_fresh]      62,314, +64 vs ours, reported
+```
+
+`ours+nvis` is the decisive one. If it captures most of the +0.0611, the
+finding is "the gate benefits from knowing how many times it has written to
+this address", which is cheaper, more parallel-friendly and a different claim
+from "volatility history helps". `ours+fresh` separates "how many times" from
+"have I ever".
+
+### One correction to how gains are reported
+
+Every gain is measured against `ours`, the masked control. At seed 0 `ours`
+(1.5577) is slightly worse than `ours_pub` (1.5544), so masking 6 columns may
+handicap the baseline, and if it does, **every gain in this directory is
+inflated by exactly that amount**. `score.py` now reports each contrast
+against both, with the inflation shown explicitly.
+
+### What does NOT change
+
+The primary metric, the +0.0064 bar, the validity gate, 3 seeds, the
+published protocol, eval streams 5150 and 5151, and the eight arms that
+preceded this. The PRIMARY verdict is still `ours+hist` and `ours+rate`
+against `ours` on overall loss, on 3 seeds, confirmed on 5151.
