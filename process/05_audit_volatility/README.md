@@ -43,6 +43,7 @@ that **fires in 04's favour**.
 | A9 | 04's linear baseline vs its overflow warnings | `>= +0.01` inflated / within `0.01` sound | **SOUND, fires for 04** |
 | A10 | is ~0.92 a real ceiling? | `>= 0.95` not-a-ceiling / `<= 0.94` confirmed | **0.9466: AMBIGUOUS by my bar, mis-specified** |
 | A10 | is the oracle set near-label? | (part of A10) | **decisively NOT: 0.783 vs 0.947** |
+| A5 | seed stability | both bars reference retracted (b) and void `R_beta` | **2 models, not 4** (see scope) |
 | A11.1 | 04's signinit magnitudes | within 0.03 | **NOT REPRODUCED** (no legacy model trained) |
 | A11.1b | the same mechanism on my model | sign and order of magnitude | **CONFIRMED** |
 | A11.3 | is the signinit bug systemic? | pass/fail per file | **not systemic, CONFIRMED** |
@@ -206,11 +207,47 @@ what a perfect class detector is worth on the beta target. The pre-registered
 bar was `<= 0.40` for "it does not deliver most of it", and it fires in 04's
 favour.**
 
+**On a second model (seed 1, same stream) every one of these holds:**
+
+```
+  quantity                         seed 0    seed 1
+  5 zero-state RER                +0.0096   +0.0098
+  5 zs + history RER              +0.0212   +0.0254
+  TRUE CLASS oracle RER           +0.0684   +0.0673
+  per-write beta* RER             +0.3361   +0.3338
+  the gate's own beta RER         -0.0359   -0.0271   <- negative on BOTH
+  share_hist                        0.197     0.271   <- bar fires on BOTH
+  best fittable policy, % of
+    the achievable reduction          6.3%      7.6%
+```
+
+So the proxy misalignment (the gate scoring negative while being the best
+policy on actual CE) is **not a one-model fluke**, and the `share_hist` bar
+fires for 04 on both models.
+
 `R_beta` came out at `+6.46` with a bootstrap sd of **121.7** and a 95% interval
 of `[-52.1, +49.7]`, because its denominator `gain_nonlin = +0.0018 +/- 0.0022`
 is zero within noise. **The point estimate is meaningless and must not be quoted
 as "history is 6x nonlinearity".** The bar is void, not fired. Its claimant was
 retracted anyway.
+
+Across three independent by-sequence splits on seed 1 the denominator **changes
+sign**, which settles it:
+
+```
+    split   gain_nonlin   gain_hist    R_beta
+        0       +0.0052     +0.0157   +3.0304
+        1       -0.0051     +0.0161   -3.1574
+        2       -0.0010     +0.0109  -10.9388
+     mean       -0.0003     +0.0142   -3.6886
+       sd       +0.0052     +0.0029   +6.9997
+```
+
+The **numerator is stable and real** (+0.0142 +/- 0.0029); only the denominator
+is degenerate (-0.0003 +/- 0.0052, i.e. zero). A ratio with a zero denominator
+takes any value it likes, so `R_beta` was a badly chosen statistic on my part
+quite apart from (b)'s retraction. `gain_hist` on the beta target is a real,
+small, positive quantity; the ratio I built around it is not.
 
 ---
 
@@ -485,6 +522,25 @@ not a shared assumption.
 - A first version of my A2.3 reference clamped the **product** of two norms at
   eps where `torch.cosine_similarity` clamps each norm separately, disagreeing
   on 1129 of 3652 rows. My bug, not 04's, found by the check working as designed.
+- **I nearly reported A7 as convicting 04**, on a pooled CI that excludes 0.80.
+  Pooling had quadrupled the classifier's training data, so it was a different
+  estimand. Caught because the pooled figure was higher than every stream it
+  pooled, which is impossible for a pure precision gain.
+
+## Scope not completed, and why
+
+- **A5 ran on 2 models, not 4.** Seeds 2 and 3 were stopped at step 100 of 800.
+  Both of A5's pre-registered bars reference claim (b), which 04 retracted, and
+  `R_beta`, which came out void; its third item was pre-registered as
+  "REPORTED, not barred". No bar's outcome turns on them, and they were costing
+  about two more hours on a machine carrying two other sessions' jobs (load 50
+  to 127 on 10 cores throughout). Seeds 0 and 1 are reported above. Recorded as
+  a scope decision, not a goalpost move.
+- **A11.1's exact magnitudes were not reproduced**, needing a separately
+  trained legacy model. A11.1b tests the mechanism instead and is reported as
+  such.
+- **No loss measurement with retraining.** That is the decider, and it is the
+  sibling session's experiment, not mine.
 
 ---
 
