@@ -1,0 +1,40 @@
+
+==============================================================================
+A10.0  self-tests on the likelihoods
+==============================================================================
+  normalisation: sum of L over every value sequence must be 1
+    n=1  REVISED 1.000000000000   NOISY 1.000000000000
+    n=2  REVISED 1.000000000000   NOISY 1.000000000000
+    PASS
+
+  Monte Carlo: simulate one address directly, compare to L
+    n=2:            pattern   emp NOISY     L NOISY     emp REV       L REV
+                ((1, 1), 0)     0.73128     0.73125     0.34113     0.34125
+                  ((2,), 1)     0.26872     0.26875     0.65887     0.65875
+    PASS
+    n=3:            pattern   emp NOISY     L NOISY     emp REV       L REV
+                ((1, 2), 1)     0.38270     0.38391     0.45071     0.44960
+             ((1, 1, 1), 0)     0.34602     0.34734     0.11264     0.11347
+                ((1, 2), 0)     0.19445     0.19195     0.00289     0.00299
+                  ((3,), 2)     0.07684     0.07680     0.43375     0.43395
+    PASS
+
+==============================================================================
+A10.1  the exact Bayes ceiling, stream 505
+==============================================================================
+  rows in 04's primary row set: 22119   base rate REVISED 0.4968
+  (no trained model is involved: every column is a function of the
+  token stream, which is how 04's row set and labels are defined.)
+
+  score                                           AUROC        n
+  EXACT BAYES LLR (sufficient statistic)         0.9479    22119
+  o_memb alone                                   0.4847    22119
+  o_ndist alone                                  0.4562    22119
+  return rate (richer summary)                   0.5852    22119
+  consecutive-repeat rate                        0.7670    22119
+  prior visit count                              0.5064    22119
+
+  classifier over feature sets, by-sequence split, GBT:
+    04's oracle set [o_memb, o_ndist]              0.7826 +/- 0.0075   n_test 11112
+    04's oracle set + visit count                  0.8185 +/- 0.0070   n_test 11112
+    richer history summaries                       0.9303 +/- 0.0039   n_test 11112
