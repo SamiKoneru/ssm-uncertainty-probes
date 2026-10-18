@@ -147,9 +147,12 @@ shipped MLP seed 1          0.8370  0.9004  +0.0634  0.0030    0.9231
 Predicted ordering legacy > seed 0 > seed 1, measured +0.0845 > +0.0807 >
 +0.0634. **Survives**, n=3, still exploratory, and the spread is small.
 
-Worth more than the trend: **the near-label oracle ceiling is 0.9164 / 0.9206 /
-0.9231 across three different gates.** That stability makes ~0.92 a property of
-the TASK rather than of any model, which is the one firm bound here.
+Worth more than the trend: **the oracle-feature ceiling is 0.9164 / 0.9206 /
+0.9231 across three different gates.** I read that stability as making ~0.92 a
+property of the TASK and called it the one firm bound here. **See RETRACTED 3
+below: wrong.** It is stable because it is a property of the FEATURE SET, which
+is identical in all three; the gates differed, the features did not. The exact
+Bayes ceiling is ~0.945.
 
 ## Answered in passing: the repo's untested s2 replacement
 

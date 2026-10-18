@@ -10,8 +10,10 @@
 evidence here does NOT establish that closing it is worth it.** Exact
 crosstalk-free per-address history adds +0.063 to +0.085 AUROC over everything
 the gate can compute with zero extra state, confirmed on a held-out eval stream.
-A near-label oracle ceiling sits at ~0.92 on every gate measured, so the gap is
-bounded. **Recommendation: do not build it** - but that is a judgement resting
+A ceiling bounds the gap, though NOT at the 0.92 this README first claimed: the
+exact Bayes ceiling given an address's value history is **~0.945**
+(`audit_bayes_ceiling.py`), so 0.92 was a property of my FEATURE SET and the
+headroom for history is +0.133 rather than +0.109. See `AUDIT.md`. **Recommendation: do not build it** - but that is a judgement resting
 on the cost of `d_k x d_v` of new state plus one prior null loss result, not a
 measurement of loss on this question. The loss experiment was not run here.
 
@@ -54,7 +56,8 @@ read of the shipped gate's own [tok, s1, s2]
   spline basis over the SAME three features         0.8112        -
 + the two other zero-extra-state features             0.8122   0.8015
 + EXACT crosstalk-free per-address history          0.8929   0.8830
-+ near-label oracle (per-address value set)         0.9206   0.9154
++ oracle features (per-address value set)           0.9206   0.9154
+EXACT BAYES ceiling given the value history        0.9449   0.9469
 ```
 
 so, as increments on the pooled scale:
@@ -62,7 +65,8 @@ so, as increments on the pooled scale:
 ```
   two more zero-extra-state features                +0.003   +0.003   zero new state
   ALL exact per-address history                     +0.081   +0.082   d_k x d_v new state
-  a near-label oracle on top of that                +0.028   +0.032   not a mechanism
+  the oracle features on top of that                +0.028   +0.032   not a mechanism
+  everything left over, up to exact Bayes           +0.024   +0.032   not a mechanism
 ```
 
 **RETRACTED** (see `AUDIT.md`): this table originally carried a row reading
@@ -200,7 +204,8 @@ s1 alone, CHANGE writes             0.8073         0.8121         0.7956
 history delta                      +0.0807        +0.0815        +0.0634
   of which h_cos                   +0.0168        +0.0180        +0.0116
   of which h_meane                 +0.0361        +0.0351        +0.0344
-near-label oracle ceiling           0.9206         0.9154         0.9231
+oracle-feature ceiling              0.9206         0.9154         0.9231
+  (exact Bayes ceiling is 0.9449 / 0.9469; see AUDIT.md RETRACTED 3)
 position control                   +0.0030        +0.0042        -0.0000
 ```
 
@@ -280,7 +285,10 @@ the feature gate's 5.67%. Two findings bear on it:
    history at all.** NOISY and REVISED show the SAME mean number of distinct
    values per address, **2.72 vs 2.72**, because a NOISY address makes about 3.3
    distinct draws from 4 options in ~7 visits while a REVISED address makes
-   1 + Binomial(7, 0.35) ~ 3.4. The near-label oracle tops out at 0.92, not 1.0.
+   1 + Binomial(7, 0.35) ~ 3.4. BUT this is weaker than it looks: the exact
+   Bayes ceiling is 0.945, and by prior visits to the address it runs 0.687 at
+   1 visit, 0.786 at 2, 0.890 at 3-4, 0.977 at 5-8 and 0.9997 at 9 or more. The
+   class IS recoverable from history, just not early. See AUDIT.md.
 2. **The gap is neither informational nor architectural. It is credit
    assignment.** `gate_capacity.py` trains the shipped gate's EXACT shape,
    `3 -> w -> w -> 1` GELU, directly on the class label as a supervised
@@ -302,7 +310,7 @@ the feature gate's 5.67%. Two findings bear on it:
    The gate's own architecture at its own shipped width reaches the full
    information content, **slightly beating the tree**, and 4x the width adds
    nothing. So the remaining oracle gap is not that the information is absent
-   (0.81 of a 0.92 near-label ceiling), and not that a `3 -> 32 -> 32 -> 1` MLP
+   (0.81 of a 0.945 exact Bayes ceiling), and not that a `3 -> 32 -> 32 -> 1` MLP
    cannot represent the required function. What the real gate lacks is the
    **learning signal**: it only ever sees the downstream language-model
    gradient, never a class label. That is consistent with
