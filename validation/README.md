@@ -174,3 +174,89 @@ only job is to break these numbers, with these targets:
    impossible, or merely hard?
 5. Check whether the larger contrary published study's router was actually
    linear. That assumption is still load-bearing and still unverified.
+
+## Verified: HAM does not contradict this work, and never could have
+
+Checked 2026-10-18 against the paper itself (arXiv:2603.22325v2, "Hybrid
+Associative Memories", Lufkin, Figliolia, Millidge, Krishnamurthy; v2 revised
+27 March 2026), not against earlier notes. Two claims this project had been
+carrying for a month were wrong.
+
+### WRONG 1: that HAM ran our ablation and got the opposite answer
+
+HAM's routing score controls **KV-cache admission to an attention branch**. It
+does not touch the delta rule's write strength.
+
+```
+Eq 10   e_t = min_h e_t^(h),   m_t = I[e_t >= tau]
+Eq 11   Attn(q_t, {k_i : m_i = 1}, {v_i : m_i = 1})
+```
+
+The RNN update carries no routing term. Eqs 7-8, Eq 15 and Algorithm 1 all
+give `S_t <- f(S_{t-1}, k_t^RNN, v_t^RNN)`. The recurrent branch is an
+**unmodified Gated DeltaNet**, described as already having "learnable decay
+gates and write strengths", with no change to its gate equations. For the
+learned routers the score enters the graph by "scaling the KV values", which
+again is the attention path and not the state.
+
+Asked directly whether the paper anywhere proposes using the prediction error,
+the readout `S_{t-1}k_t`, or the residual to modulate the RNN's own write
+strength, step size, beta or update gate: **no such passage exists**, in the
+body or the appendices.
+
+So HAM's beta is precisely this suite's `none` arm, and its 48.4 vs 49.1 was
+never measuring our mechanism. Treating that table as a contradiction was an
+error on our side, not a finding.
+
+### WRONG 2: that cosine loses because it discards magnitude
+
+Refuted by our own `ham_and_position.py` before this check: `ham_cos_mlp`
+scores 5.06% against `ours` at 5.51% and wins on accuracy. Magnitude is worth
+about 8% of the effect.
+
+### What is true, and is what the cosine arms actually test
+
+HAM's design space entangles two axes, and its own FLOP accounting labels them
+as mutually exclusive options:
+
+```
+"via RNN state (if not using a learnable router)"
+"via input   (if using a learnable router)"
+```
+
+- state-based score: hand-designed cosine distance, Eq 16, no learned weights,
+  used only through `m_t = I[e_t >= tau]`. tau may be fixed or learned.
+- learned router: Eq 14, `e_t = sigma(MLP(x_t))`, fed the **token only**.
+  Appendix A.1 gives either `sigma(W_r x_t)` or a 3-layer GELU MLP, width 256.
+- the general form it simplifies away:
+  `e_t^(h) = D_theta(S_{t-1}^(h) k_t^(h), v_t^(h), x_t)`, "parametrized as a
+  MLP with a sigmoid at the end". The paper states it "simplif[ies] this
+  learned router by only feeding it the input x_t" and never evaluates the
+  general form.
+- the `Learned router + EDA` row's learned per-layer coefficient gamma_l,
+  `e_t^l <- gamma_l e_t^l + (1 - gamma_l) e_t^{l-1}`, averages the LEARNED
+  router's scores across layers. It is not a learned function of the residual.
+
+So HAM writes down a learned function of exactly our features, never runs it,
+and its two evaluated arms differ in both information source and learnedness
+at once. Our `ham_cos_lin` 1.93% vs `ham_cos_mlp` 5.06% independently
+reproduces the half of that which is about learnedness.
+
+### Scale, stated plainly
+
+HAM: ~800M params, 50B tokens, 16,384 context, real language, 50% KV cache.
+This repo: 62,058 params, one layer, synthetic task, 256 context. Four orders
+of magnitude apart. Nothing here transfers by default, which is the whole
+reason MQAR and eventually real language data matter.
+
+HAM's Table 1 reports **no seeds or variance**, so its own 0.7-point average
+gap is unqualified. Its RULER gaps are much larger (MK1 39/28/15 for Fixed tau
+against 95/90/69 for the learned router).
+
+### Residual uncertainty
+
+Verified by targeted queries against the arXiv HTML, cross-checked three ways:
+the main text equations, the appendix FLOP tables (a different part of the
+document, written for a different purpose, saying the same thing), and an
+explicit negative-existence query. The appendix labels are the strongest
+corroboration. Not verified by reading the PDF end to end personally.
