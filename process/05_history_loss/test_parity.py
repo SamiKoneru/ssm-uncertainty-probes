@@ -19,8 +19,11 @@ CHECK 3  the history block opens NO gradient path of its own. With the gate's
          the difference instead of only bounding its size.)
 CHECK 4  ours+hist and ours differ in their logits once the history weights
          are NOT zero, i.e. the feature actually reaches the output.
-CHECK 5  the bookkeeping agrees with 04_volatility_history/features.py on a
-         shared quantity (visit count per address).
+CHECK 5  the bookkeeping agrees with an independent naive recomputation on
+         BOTH visit count and o_memb. 04's own bookkeeping lives in
+         features.Bookkeeper on an unmerged branch, so it cannot be imported
+         here; this checks the same way its audit did, against a
+         reimplementation written from the spec rather than copied.
 """
 import os
 import sys
@@ -84,6 +87,18 @@ live = [i for i in range(5) if fr[..., 3 + i].abs().max() > 0]
 check("`ours+rate` has exactly one live history column", live == [3],
       f"live columns {[A.HIST[i] for i in live]}")
 
+torch.manual_seed(7)
+m_orc = A.build("ours+oracle")
+m_orc.eval()
+with torch.no_grad():
+    _, _, fo = m_orc(tok, return_beta=True, return_feats=True)
+live = [i for i in range(A.N_EXTRA) if fo[..., 3 + i].abs().max() > 0]
+check("`ours+oracle` has every column live, o_memb included",
+      live == list(range(A.N_EXTRA)),
+      f"live columns {[A.HIST[i] for i in live]}")
+check("o_memb is a 0/1 indicator",
+      bool(((fo[..., 8] == 0) | (fo[..., 8] == 1)).all()))
+
 # ---------------------------------------------------------------- CHECK 3
 print("\nCHECK 3  history carries no gradient of its own")
 torch.manual_seed(7)
@@ -131,23 +146,34 @@ check("h_ratio clamp rate is reported",
       f"{100 * m_h.n_clamped / max(m_h.n_hist_rows, 1):.2f}% of seen writes")
 
 # ---------------------------------------------------------------- CHECK 5
-print("\nCHECK 5  bookkeeping agrees with 04's features.py on visit counts")
-# 04's h_nvis is the raw count; mine is log1p of it. Recompute 04's rule
-# independently here from the token stream and compare against the model's.
+print("\nCHECK 5  bookkeeping vs an independent naive reimplementation")
+# Written from the spec, one sequence at a time, no vectorisation and no
+# reference to arms.py: the write at step t goes to the address from token
+# x_{t-1} carrying the value from token x_t.
 with torch.no_grad():
-    _, _, fh = m_h(tok, return_beta=True, return_feats=True)
+    _, _, fh = m_orc(tok, return_beta=True, return_feats=True)
 mine_nvis = torch.expm1(fh[..., 7]).round().long().numpy()
+mine_memb = fh[..., 8].numpy()
 B, L = tok.shape
-ref = np.zeros((B, L), np.int64)
+ref_nvis = np.zeros((B, L), np.int64)
+ref_memb = np.zeros((B, L), np.float64)
 for b in range(B):
-    c = np.zeros(T.N_SYM, np.int64)
+    cnt = {}
+    seen_vals = {}
     for t in range(1, L):
-        a = int(tok[b, t - 1])
-        ref[b, t] = c[a]
-        c[a] += 1
-check("visit counts match an independent recomputation",
-      bool((mine_nvis == ref).all()),
-      f"mismatches {int((mine_nvis != ref).sum())}/{B * L}")
+        a, val = int(tok[b, t - 1]), int(tok[b, t])
+        ref_nvis[b, t] = cnt.get(a, 0)
+        # vacuously false on a fresh address, matching the blanking convention
+        ref_memb[b, t] = 1.0 if val in seen_vals.get(a, set()) else 0.0
+        cnt[a] = cnt.get(a, 0) + 1
+        seen_vals.setdefault(a, set()).add(val)
+check("visit counts match the naive reimplementation",
+      bool((mine_nvis == ref_nvis).all()),
+      f"mismatches {int((mine_nvis != ref_nvis).sum())}/{B * L}")
+check("o_memb matches the naive reimplementation",
+      bool((mine_memb == ref_memb).all()),
+      f"mismatches {int((mine_memb != ref_memb).sum())}/{B * L}, "
+      f"base rate {ref_memb.mean():.3f}")
 
 print(f"\n{'ALL CHECKS PASS' if not FAIL else 'FAILED: ' + ', '.join(FAIL)}")
 sys.exit(1 if FAIL else 0)

@@ -273,3 +273,99 @@ results existed.
 Caveat on the prior number itself: `rate_delta` is a different model
 (`GatedDeltaLayer` on `mixed_task`, not the shipped `GatedDeltaSSM`), one seed,
 scored on stream 12345. It is indicative, not a comparable measurement.
+
+---
+
+## APPENDED 2026-10-18, after 04's AUDIT.md, still before any result
+
+**Status when this was written: no run of mine had finished.** The first pair
+of training jobs was killed at roughly step 100 of 800 and every checkpoint was
+discarded, so no loss number from this directory existed. Everything below is a
+design change made blind, not a response to a result.
+
+### Why
+
+The session that briefed me audited 04 and published
+`process/04_volatility_history/AUDIT.md`. Of the five arguments behind 04's
+"not worth building", one is **retracted** (the "+0.134 free nonlinear
+headroom" compared an already-banked gain against a prospective one), one is
+**misapplied** (the gate-shaped MLP reaches the history-augmented 0.9017 too,
+so credit assignment does not discriminate between the arms), and the "gate
+manufactures its own signal" figure was **4x too large**, having come off a
+buggy replay in `signinit_test.py` that used an input-only beta to replay a
+memory-gated model.
+
+What survives the audit and still supports my arms: history adds **+0.063 to
++0.085 AUROC** across four model-stream combinations including a held-out
+stream, verified as information rather than capacity (five random features
+matched to the history block's marginal shapes give **-0.0008**; a
+per-sequence constant gives -0.0195); `h_meane` beats `h_cos` on every reading
+(+0.034 to +0.036 against +0.012 to +0.018); the near-label oracle ceiling is
+**0.9164 / 0.9206 / 0.9231** across three gates, stable enough to look like a
+property of the task.
+
+**So "no gain" is no longer a well-supported prior to confirm.** What is left
+behind it is one cross-model single-seed null and the state cost. My recorded
+prediction stands as my expectation and nothing else; the bar decides.
+
+### Change 1: a fifth arm, `ours+oracle`, the CEILING
+
+```
+ours+oracle   [tok, s1, s2, h_cos, h_cosmean, h_ratio, h_meane, h_nvis, o_memb]
+```
+
+`o_memb` answers "is the incoming value one this address has shown before?". A
+NOISY address redraws from a fixed set so usually yes; a REVISED address moves
+to a fresh symbol so usually no. It is close to the class label **by
+construction and is not a buildable mechanism.** It is here because it is the
+cleanest possible decider: **if even the ceiling buys no loss, the question is
+closed for every history mechanism at once**, which is stronger than any
+realistic arm can establish. It is never reported as a mechanism.
+
+### Change 2: every gated arm is now 9 wide, so all four are param-identical
+
+`o_memb` becomes a sixth maskable column, so `ours`, `ours+hist`, `ours+rate`
+and `ours+oracle` all take 9 inputs and all have **62,250 parameters exactly**.
+This is strictly better than the design it replaces, where the oracle arm would
+have carried 32 more parameters than its own control. `none` (62,058) and
+`ours_pub` (62,058) remain mismatched by construction and are still reported as
+such. The 12 runs become 18; `ours_pub` runs last and is dropped if the machine
+does not allow it.
+
+### Change 3: a second loss metric, SECONDARY and EXPLORATORY
+
+The task has absorbing states: `succ[s] == s` with probability 1/40 per symbol,
+the median sequence sends 28 of its 256 writes to one address, and **44% of all
+writes are STABLE repeats where accuracy is already 1.000**. Those positions
+dilute any difference in the overall figure.
+
+So alongside the primary I report **loss restricted to positions whose QUERY
+token is NOISY or REVISED**, plus a per-class breakdown. The query at position
+`t` asks for the successor of `x_t`, so the governing label is `class(x_t)`,
+which is a different labelling from the write class `class(x_{t-1})`; both are
+computed and kept apart as `cls_q` and `cls_w`.
+
+**Its bar.** No prior seed sd exists for this quantity, so unlike the primary I
+cannot fix a number in advance. I fix the **formula** instead, now:
+
+```
+bar_hard = 2 x sd_pooled x sqrt(2/3)
+```
+
+where `sd_pooled` is the **within-arm** seed sd pooled across all arms, a
+nuisance-parameter estimate computed from the spread of seeds within each arm
+and never from the contrast between arms. This is the same thing any t-test
+does, but it is estimated from this experiment, so:
+
+**the restricted-loss result is EXPLORATORY in all cases** and a gain there
+counts only if it reproduces on held-out stream 5151. The PRIMARY verdict of
+this directory rests on the overall loss against the fixed +0.0064, unchanged.
+
+### What does NOT change
+
+The primary metric, the +0.0064 bar, the 3 seeds, the published protocol, the
+arms `none` / `ours` / `ours+hist` / `ours+rate`, the validity gate, the eval
+streams 5150 and 5151, and my recorded prediction. I am not relaxing the bar
+to let a gain through: +0.0064 is 7% of the ~0.09 nats the whole memory gate
+buys over `none`, so an effect worth a fraction of the headline mechanism still
+registers.

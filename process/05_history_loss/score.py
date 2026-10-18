@@ -10,11 +10,25 @@ that 14 files score on default_rng(12345) and 04 used 777 and 888.
 6 batches of 32 sequences, matching gated_delta_ssm/train.py's eval. Every arm
 sees the IDENTICAL stream.
 
-Bars, from PREREGISTRATION.md, fixed before any run:
+TWO loss metrics, both fixed before any run (see PREREGISTRATION.md and its
+second appendix):
 
-    BAR       mean_loss(ours) - mean_loss(arm) >= +0.0064 nats
-              = 2 x SE_diff at the repo's measured seed sd of 0.0039, n=3
-    VALIDITY  mean_loss(none) - mean_loss(ours) >= 4.00% of mean_loss(none)
+  overall      mean cross-entropy over all positions. THE PRIMARY. Bar
+               +0.0064 nats = 2 x SE_diff at the repo's prior seed sd 0.0039.
+  NOISY+REV    mean cross-entropy restricted to positions whose QUERY token is
+               NOISY or REVISED. SECONDARY and EXPLORATORY: no prior sd exists
+               for it, so its bar is computed from the POOLED WITHIN-ARM seed
+               sd by the same formula, which is a nuisance-parameter estimate
+               and not the contrast of interest.
+
+The restriction matters because the task has absorbing states: 44% of writes
+are STABLE repeats where accuracy is already 1.000, so they dilute any
+difference in the overall figure.
+
+The class of the QUERY at position t is class(x_t), because the readout uses
+q_t from x_t to predict x_{t+1}. That is a different labelling from the class
+of the WRITE at position t, which is class(x_{t-1}); both appear here and are
+named cls_q and cls_w to keep them apart.
 """
 import argparse
 import json
@@ -38,6 +52,10 @@ CKPT = os.path.join(HERE, "checkpoints")
 BAR = 0.0064          # nats, = 2 * 0.0039 * sqrt(2/3)
 PRIOR_SD = 0.0039     # gated_delta_ssm/train.py docstring, n=3
 VALIDITY_PCT = 4.00   # validation/README.md's own confirmed bar
+CLS = ("STABLE", "NOISY", "REVISED")
+DEFAULT_ARMS = ["none", "ours", "ours+hist", "ours+rate", "ours+oracle",
+                "ours_pub"]
+TEST_ARMS = ["ours+hist", "ours+rate", "ours+oracle"]
 
 
 def load(arm, seed):
@@ -53,124 +71,155 @@ def load(arm, seed):
 
 @torch.no_grad()
 def evaluate(m, stream, batches=6, batch=32):
-    """Eval loss/acc plus beta tagged by key class and the task's seen mask."""
     ev = np.random.default_rng(stream)
-    losses, accs, betas, cls_w, seen = [], [], [], [], []
+    ce, cor, bet, cq, cw, sn = [], [], [], [], [], []
     for _ in range(batches):
-        x, cl, sn = T.sample(ev, batch)
+        x, cl, seen = T.sample(ev, batch)
+        tgt = x[:, 1:]
         lg, b = m(x[:, :-1], return_beta=True)
-        losses.append(F.cross_entropy(lg.reshape(-1, T.N_SYM),
-                                      x[:, 1:].reshape(-1)).item())
-        accs.append((lg.argmax(-1) == x[:, 1:]).float().mean().item())
-        betas.append(b)
-        # beta_t writes to the key from token t-1, so label it with that
-        cls_w.append(F.pad(cl, (1, 0))[:, :T.L])
-        seen.append(sn)
+        ce.append(F.cross_entropy(lg.reshape(-1, T.N_SYM), tgt.reshape(-1),
+                                  reduction="none").reshape(batch, T.L))
+        cor.append((lg.argmax(-1) == tgt).float())
+        bet.append(b)
+        cq.append(cl)                                   # class of x_t, the query
+        cw.append(F.pad(cl, (1, 0))[:, :T.L])           # class of x_{t-1}, write
+        sn.append(seen)
     f = lambda z: torch.cat(z).reshape(-1).numpy()
-    return (float(np.mean(losses)), float(np.mean(accs)),
-            f(betas), f(cls_w), f(seen).astype(bool))
+    ce, cor, cq = f(ce), f(cor), f(cq)
+    hard = (cq == 1) | (cq == 2)
+    return {
+        "loss": float(ce.mean()), "acc": float(cor.mean()),
+        "loss_hard": float(ce[hard].mean()), "acc_hard": float(cor[hard].mean()),
+        "loss_by_class": [float(ce[cq == i].mean()) for i in range(3)],
+        "acc_by_class": [float(cor[cq == i].mean()) for i in range(3)],
+        "frac_hard": float(hard.mean()),
+        "beta_by_class": [float(f(bet)[(f(cw) == i) & f(sn).astype(bool)].mean())
+                          for i in range(3)],
+    }
+
+
+def table(res, key, label, bar, arms, note=""):
+    print(f"\n{label}   bar {bar:+.4f} nats {note}")
+    print(f"  {'arm':13s}{'s0':>9}{'s1':>9}{'s2':>9}{'mean':>9}{'sd':>8}"
+          f"{'gain vs ours':>14}{'per-seed gain':>28}{'verdict':>9}")
+    base = res.get("ours")
+    for arm, r in res.items():
+        v = np.array([run[key] for run in r["runs"]])
+        sd = v.std(ddof=1) if len(v) > 1 else float("nan")
+        cells = "".join(f"{z:>9.4f}" for z in v) + " " * (9 * (3 - len(v)))
+        g, ps, verd = "", "", ""
+        if base is not None and arm in arms:
+            bv = np.array([run[key] for run in base["runs"]])
+            gain = bv.mean() - v.mean()
+            g = f"{gain:>+14.4f}"
+            n = min(len(bv), len(v))
+            ps = "".join(f"{bv[i] - v[i]:>+9.4f}" for i in range(n)) \
+                + " " * (9 * (3 - n))
+            verd = "PASS" if gain >= bar else "KILL"
+            r[f"{key}_gain"] = float(gain)
+            r[f"{key}_verdict"] = verd
+        else:
+            g, ps = " " * 14, " " * 27
+        print(f"  {arm:13s}{cells}{v.mean():>9.4f}{sd:>8.4f}{g}{ps}{verd:>9}")
+        r[f"{key}_mean"], r[f"{key}_sd"] = float(v.mean()), float(sd)
+
+
+def pooled_sd(res, key):
+    """Within-arm seed sd pooled across arms: a nuisance-parameter estimate,
+    not the contrast of interest."""
+    sq, df = 0.0, 0
+    for r in res.values():
+        v = np.array([run[key] for run in r["runs"]])
+        if len(v) > 1:
+            sq += ((v - v.mean()) ** 2).sum()
+            df += len(v) - 1
+    return float(np.sqrt(sq / df)) if df else float("nan")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stream", type=int, required=True)
     ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])
-    ap.add_argument("--arms", nargs="+",
-                    default=["none", "ours", "ours+hist", "ours+rate",
-                             "ours_pub"])
+    ap.add_argument("--arms", nargs="+", default=DEFAULT_ARMS)
     ap.add_argument("--threads", type=int, default=2)
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
 
     print(f"EVAL STREAM {a.stream}   seeds {a.seeds}   "
-          f"6 batches x 32 sequences\n")
+          f"6 batches x 32 sequences")
     res = {}
     for arm in a.arms:
-        L, Ac, meta = [], [], []
+        runs = []
         for s in a.seeds:
             m, ck = load(arm, s)
             if m is None:
                 continue
-            loss, acc, beta, clw, sn = evaluate(m, a.stream)
-            L.append(loss); Ac.append(acc)
-            meta.append({"seed": s, "loss": loss, "acc": acc,
-                         "params": ck["params"],
-                         "secs": round(ck["train_secs"], 1),
-                         "clamp": ck["h_ratio_clamp_rate"],
-                         "beta_by_class": [
-                             float(beta[(clw == i) & sn].mean())
-                             for i in range(3)]})
-        if L:
-            res[arm] = {"loss": L, "acc": Ac, "runs": meta}
-
-    print(f"{'arm':12s}{'params':>8}{'loss s0':>10}{'s1':>9}{'s2':>9}"
-          f"{'mean':>9}{'sd':>8}{'acc':>9}{'min/step':>10}")
+            r = evaluate(m, a.stream)
+            r.update(seed=s, params=ck["params"],
+                     secs=round(ck["train_secs"], 1),
+                     clamp=ck["h_ratio_clamp_rate"])
+            runs.append(r)
+        if runs:
+            res[arm] = {"runs": runs}
+    if not res:
+        print("no checkpoints found")
+        return
+    print(f"fraction of positions with a NOISY or REVISED query: "
+          f"{res[list(res)[0]]['runs'][0]['frac_hard']:.4f}")
+    print(f"\n{'arm':13s}{'params':>9}{'train min':>11}")
     for arm, r in res.items():
-        L = np.array(r["loss"]); Ac = np.array(r["acc"])
-        sd = L.std(ddof=1) if len(L) > 1 else float("nan")
-        cells = "".join(f"{v:>9.4f}" for v in L) + " " * (9 * (3 - len(L)))
-        secs = np.mean([m["secs"] for m in r["runs"]])
-        print(f"{arm:12s}{r['runs'][0]['params']:>8,}{cells}"
-              f"{L.mean():>9.4f}{sd:>8.4f}{Ac.mean():>9.4f}"
-              f"{secs / 60:>10.1f}")
-        r["mean"], r["sd"], r["acc_mean"] = float(L.mean()), float(sd), \
-            float(Ac.mean())
+        print(f"{arm:13s}{r['runs'][0]['params']:>9,}"
+              f"{np.mean([x['secs'] for x in r['runs']]) / 60:>11.1f}")
 
-    out = {"stream": a.stream, "seeds": a.seeds, "bar": BAR,
-           "prior_sd": PRIOR_SD, "arms": res}
+    table(res, "loss", "PRIMARY: overall eval loss (nats)", BAR, TEST_ARMS,
+          "(pre-registered, from the repo's prior seed sd 0.0039)")
 
-    # ------------------------------------------------------- validity gate
-    print("\nVALIDITY GATE (pre-registered): the masked 8-input `ours` must "
-          "reproduce the published effect")
+    psd = pooled_sd(res, "loss_hard")
+    bar_hard = 2 * psd * np.sqrt(2 / 3)
+    table(res, "loss_hard",
+          "SECONDARY, EXPLORATORY: loss on NOISY+REVISED queries only",
+          bar_hard, TEST_ARMS,
+          f"(from pooled within-arm sd {psd:.4f}, computed not asserted)")
+
+    psd_o = pooled_sd(res, "loss")
+    print(f"\nCROSS-CHECK on the primary: pooled within-arm sd {psd_o:.4f} "
+          f"-> implied bar {2 * psd_o * np.sqrt(2 / 3):+.4f} "
+          f"vs the pre-registered {BAR:+.4f}")
+    print(f"  the pre-registered bar is "
+          f"{'CONSERVATIVE (harder to pass)' if BAR >= 2 * psd_o * np.sqrt(2 / 3) else 'OPTIMISTIC: this run was noisier than the prior, so it is UNDERPOWERED'}")
+
+    print("\nVALIDITY GATE: the masked `ours` must reproduce the published effect")
     if "none" in res and "ours" in res:
-        n, o = res["none"]["mean"], res["ours"]["mean"]
+        n, o = res["none"]["loss_mean"], res["ours"]["loss_mean"]
         pct = 100 * (n - o) / n
-        ok = pct >= VALIDITY_PCT
         print(f"  none {n:.4f}  ours {o:.4f}  -> {pct:+.2f}%   "
               f"bar >= {VALIDITY_PCT:.2f}%   "
-              f"{'PASS' if ok else 'VOID: the harness is broken'}")
-        out["validity"] = {"pct": pct, "pass": bool(ok)}
+              f"{'PASS' if pct >= VALIDITY_PCT else 'VOID: the harness is broken'}")
+        res["_validity"] = {"pct": float(pct), "pass": bool(pct >= VALIDITY_PCT)}
 
-    # -------------------------------------------------------- primary bars
-    print(f"\nPRIMARY BARS (pre-registered): gain over `ours` must be "
-          f">= {BAR:+.4f} nats")
-    print(f"  {'arm':12s}{'mean':>9}{'gain vs ours':>15}{'per-seed gain':>26}"
-          f"{'verdict':>12}")
-    if "ours" in res:
-        base = res["ours"]
-        for arm in ("ours+hist", "ours+rate"):
-            if arm not in res:
-                continue
-            g = base["mean"] - res[arm]["mean"]
-            paired = [base["loss"][i] - res[arm]["loss"][i]
-                      for i in range(min(len(base["loss"]),
-                                         len(res[arm]["loss"])))]
-            v = "PASS" if g >= BAR else "KILL"
-            print(f"  {arm:12s}{res[arm]['mean']:>9.4f}{g:>+15.4f}"
-                  + "".join(f"{p:>+9.4f}" for p in paired)
-                  + " " * (9 * (3 - len(paired))) + f"{v:>12}")
-            res[arm]["gain_vs_ours"] = float(g)
-            res[arm]["paired"] = [float(p) for p in paired]
-            res[arm]["verdict"] = v
-
-    # ------------------------------------------- realized sd vs the prior
-    print("\nREALIZED seed sd vs the 0.0039 the bar was derived from")
+    print(f"\n{'arm':13s}{'acc':>8}{'acc hard':>10}   "
+          f"loss by class {CLS}")
     for arm, r in res.items():
-        if np.isnan(r["sd"]):
+        if arm.startswith("_"):
             continue
-        se_d = r["sd"] * np.sqrt(2 / 3)
-        print(f"  {arm:12s} sd {r['sd']:.4f}   implied 2xSE_diff "
-              f"{2 * se_d:+.4f}   "
-              f"{'bar was FAIR or generous' if r['sd'] <= PRIOR_SD else 'bar was OPTIMISTIC: underpowered'}")
+        lb = np.mean([x["loss_by_class"] for x in r["runs"]], 0)
+        print(f"{arm:13s}{np.mean([x['acc'] for x in r['runs']]):>8.4f}"
+              f"{np.mean([x['acc_hard'] for x in r['runs']]):>10.4f}   "
+              + "".join(f"{z:>9.4f}" for z in lb))
 
-    print("\nmean beta by key class on seen writes (STABLE / NOISY / REVISED)")
+    print(f"\n{'arm':13s}mean beta by key class on seen writes "
+          f"{CLS}")
     for arm, r in res.items():
-        b = np.array([m["beta_by_class"] for m in r["runs"]]).mean(0)
-        print(f"  {arm:12s}{b[0]:>9.3f}{b[1]:>9.3f}{b[2]:>9.3f}")
+        if arm.startswith("_"):
+            continue
+        b = np.mean([x["beta_by_class"] for x in r["runs"]], 0)
+        print(f"{arm:13s}" + "".join(f"{z:>10.3f}" for z in b))
 
     p = os.path.join(HERE, f"results_{a.stream}.json")
     with open(p, "w") as fh:
-        json.dump(out, fh, indent=1, default=float)
+        json.dump({"stream": a.stream, "seeds": a.seeds, "bar": BAR,
+                   "prior_sd": PRIOR_SD, "arms": res}, fh, indent=1,
+                  default=float)
     print(f"\nwrote {p}")
 
 

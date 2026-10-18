@@ -1,0 +1,3 @@
+arm none  seed 0  800 steps  batch 24  2 threads
+  step    0  loss 3.8230  3s
+  step  100  loss 1.8606  284s

@@ -9,11 +9,21 @@ gate input width (8), the same parameter count, the same initialisation and the
 same FLOPs, and differ only in which columns are zeroed before the MLP sees
 them.
 
-    none        memory_gate=False                     input-only baseline
-    ours        [tok, s1, s2, 0,0,0,0,0]              masked control
-    ours+hist   [tok, s1, s2, h1..h5]                 all five history features
-    ours+rate   [tok, s1, s2, 0,0,0,h_meane,0]        the rate memory alone
-    ours_pub    [tok, s1, s2]                         literal shipped 3-input gate
+    none         memory_gate=False                  input-only baseline
+    ours         [tok, s1, s2, 0 x 6]               masked control
+    ours+hist    [tok, s1, s2, h1..h5, 0]           all five history features
+    ours+rate    [tok, s1, s2, 0,0,0,h_meane,0,0]   the rate memory alone
+    ours+oracle  [tok, s1, s2, h1..h5, o_memb]      THE CEILING, not a mechanism
+    ours_pub     [tok, s1, s2]                      literal shipped 3-input gate
+
+`ours+oracle` adds `o_memb`: is the incoming value one this address has shown
+before? A NOISY address redraws from a fixed set so usually yes; a REVISED
+address moves to a fresh symbol so usually no. It is close to the class label
+BY CONSTRUCTION and is not buildable. It is here as the ceiling: 04's audit
+puts this feature set at AUROC ~0.92 across three different gates, stable
+enough to look like a property of the task. **If even the ceiling buys no
+loss, the question is closed for every history mechanism at once**, which is a
+stronger result than any realistic arm can give.
 
 The bookkeeping is EXACT: one slot per symbol, no superposition, so it is an
 UPPER BOUND on what any real per-address history mechanism could feed the gate.
@@ -38,16 +48,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
 import task as T                                                  # noqa: E402
 from model import GatedDeltaSSM                                   # noqa: E402
 
-# order of the five history columns inside the gate input, after [tok, s1, s2]
-HIST = ["h_cos", "h_cosmean", "h_ratio", "h_meane", "h_nvis"]
+# order of the extra gate-input columns, after [tok, s1, s2]. The first five
+# are 04's history block; the sixth is its near-label oracle.
+HIST = ["h_cos", "h_cosmean", "h_ratio", "h_meane", "h_nvis", "o_memb"]
+N_EXTRA = len(HIST)
 
 ARMS = {
-    #  arm         n_hist  keep (indices into HIST)
-    "none":       (0,      ()),
-    "ours":       (5,      ()),
-    "ours+hist":  (5,      (0, 1, 2, 3, 4)),
-    "ours+rate":  (5,      (3,)),            # h_meane only
-    "ours_pub":   (0,      ()),
+    #  arm           n_hist    keep (indices into HIST)
+    "none":         (0,        ()),
+    "ours":         (N_EXTRA,  ()),
+    "ours+hist":    (N_EXTRA,  (0, 1, 2, 3, 4)),
+    "ours+rate":    (N_EXTRA,  (3,)),                    # h_meane only
+    "ours+oracle":  (N_EXTRA,  (0, 1, 2, 3, 4, 5)),      # ceiling, not buildable
+    "ours_pub":     (0,        ()),
 }
 
 RATIO_CLAMP = 10.0
@@ -61,7 +74,7 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
     multiplied by a fixed 0/1 keep-mask so every arm is parameter-identical.
     """
 
-    def __init__(self, vocab, n_hist=5, keep=(), gate_width=32,
+    def __init__(self, vocab, n_hist=N_EXTRA, keep=(), gate_width=32,
                  memory_gate=True, n_addr=None, **kw):
         super().__init__(vocab, gate_width=gate_width,
                          memory_gate=memory_gate, **kw)
@@ -109,6 +122,9 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
             sum_e = torch.zeros(B, self.n_addr, self.d_v, device=dev, dtype=dt)
             sum_ne = torch.zeros(B, self.n_addr, device=dev, dtype=dt)
             cnt = torch.zeros(B, self.n_addr, device=dev, dtype=dt)
+            # which values each address has already shown, for o_memb
+            valset = torch.zeros(B, self.n_addr, self.n_addr, dtype=torch.bool,
+                                 device=dev)
             zero_h = torch.zeros(B, self.n_hist, device=dev, dtype=dt)
 
         S = emb.new_zeros(B, self.d_v, self.d_k)
@@ -130,7 +146,7 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
                     with torch.no_grad():
                         h = self._history(t, tokens, e.detach(), ne.detach(),
                                           ar, last_e, sum_e, sum_ne, cnt,
-                                          zero_h)
+                                          valset, zero_h)
                     gin = torch.cat([gin, h * self.hist_mask], -1)
                 if return_feats:
                     feats.append(gin.detach())
@@ -150,7 +166,7 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
         return (lg, torch.stack(betas, 1)) if return_beta else lg
 
     def _history(self, t, tokens, e, ne, ar, last_e, sum_e, sum_ne, cnt,
-                 zero_h):
+                 valset, zero_h):
         """The five exact per-address history features at step t, then update.
 
         The write at step t stores the value from token x_t at the address
@@ -161,10 +177,12 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
         if t == 0:
             return zero_h
         addr = tokens[:, t - 1]
+        val = tokens[:, t]
         p_last = last_e[ar, addr]
         p_sum = sum_e[ar, addr]
         p_cnt = cnt[ar, addr]
         p_ne = sum_ne[ar, addr]
+        memb = valset[ar, addr, val].to(e.dtype)
         fresh = p_cnt == 0
 
         def blank(z):
@@ -185,12 +203,18 @@ class HistGatedDeltaSSM(GatedDeltaSSM):
         # care about scale).
         h_meane = blank(torch.log1p(p_ne / p_cnt.clamp_min(1)))
         h_nvis = torch.log1p(p_cnt)
+        # ORACLE. On a fresh address "has this value been seen here before" is
+        # vacuously false, so 0 is the correct answer rather than a collision
+        # with the blanking convention, and h_nvis still flags fresh.
+        o_memb = blank(memb)
 
         last_e[ar, addr] = e
         sum_e[ar, addr] = p_sum + e
         sum_ne[ar, addr] = p_ne + ne
         cnt[ar, addr] = p_cnt + 1
-        return torch.stack([h_cos, h_cosmean, h_ratio, h_meane, h_nvis], -1)
+        valset[ar, addr, val] = True
+        return torch.stack([h_cos, h_cosmean, h_ratio, h_meane, h_nvis,
+                            o_memb], -1)
 
 
 def build(arm, vocab=T.N_SYM, gate_width=32):
@@ -214,11 +238,11 @@ if __name__ == "__main__":
         n_hist, keep = ARMS[a]
         print(f"{a:12s}{n:>10,}{3 + n_hist:>9}  "
               f"{[HIST[i] for i in keep] if keep else '-'}")
-    gated = ["ours", "ours+hist", "ours+rate"]
+    gated = ["ours", "ours+hist", "ours+rate", "ours+oracle"]
     ok = len({counts[a] for a in gated}) == 1
-    print(f"\nthe three gated arms: "
+    print(f"\nthe four gated arms: "
           f"{'IDENTICAL param count, control is valid' if ok else 'MISMATCH, control is INVALID'}")
     print(f"none     is {counts['ours'] - counts['none']:+,} vs ours "
           f"(no gate used; mismatch is by design and is reported)")
     print(f"ours_pub is {counts['ours'] - counts['ours_pub']:+,} vs ours "
-          f"(the 5 masked input columns' first-layer weights)")
+          f"(the 6 masked input columns' first-layer weights)")
