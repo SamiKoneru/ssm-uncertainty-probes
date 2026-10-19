@@ -1,5 +1,14 @@
 # 04_volatility_history - does long-term volatility add anything to beta?
 
+> **SETTLED BY `../05_history_loss/`, AND THIS DIRECTORY'S RECOMMENDATION IS
+> OVERTURNED.** Exact per-address history in the gate cuts loss by **+0.0551
+> nats**, 8.6x that session's pre-registered bar, 3 seeds, confirmed on a
+> held-out stream (+0.0563) with eight arms across two streams and zero
+> disagreements. My recorded prediction of "no loss gain beyond seed noise" was
+> wrong. The mechanism, however, is not what this directory theorised, and
+> **two separate effects turned out to be tangled together**: see "THE FINAL
+> ANSWER" at the end of this file. Read it before anything else here.
+
 > **READ [`AUDIT.md`](AUDIT.md) FIRST.** A post-hoc audit retracted one headline
 > figure of this directory as a bug artifact, retracted one argument outright,
 > and found a third misapplied. The separability measurements all survived,
@@ -542,3 +551,107 @@ logs/                 one log per run, streams 777 and 888
 it except the explicit reproduction attempts. Primary stream **777**,
 confirmation stream **888** held out and untouched until the conclusion was
 committed (`a7df0ff`).
+
+
+---
+
+# THE FINAL ANSWER (`../05_history_loss`, branch `claude/sharp-dubinsky-67ebc6`)
+
+Confirmed on held-out stream 5151: **eight arms, two streams, zero
+disagreements.**
+
+```
+arm              5150 gain   5151 gain   verdict
+ours+hist          +0.0551     +0.0563      PASS     8.6x the bar
+ours+oracle        +0.0698     +0.0731      PASS
+ours+bayes         +0.0393     +0.0426      PASS
+ours+rate          +0.0060     +0.0052      KILL     misses on both
+ours+nvis          -0.0009     -0.0027      KILL
+ours+fresh         +0.0032     +0.0028      KILL
+VALIDITY GATE        +5.42%      +5.60%      PASS
+```
+
+## My visit-counter explanation is REFUTED
+
+After seeing the gain concentrate at low visit counts I proposed that the whole
+effect was a per-address write counter, `d_k` of state rather than `d_k x d_v`,
+and nothing to do with volatility. That got its own arm instead of an argument,
+and it is **wrong**: `h_nvis` alone is worth **-0.0009** and a single
+"ever written" bit is worth **+0.0032**, against the five together at +0.0551.
+Neither comes close. Seventh retraction of mine in this session.
+
+What the features do instead is **superadditive**. `h_meane` alone is worth
++0.0060 as an arm, but removing it from the trained five costs **+0.0934**, a
+15x gap. The gate co-adapts to the whole block, so no single feature's
+standalone value predicts its contribution.
+
+## There are TWO effects, and only one of them is volatility
+
+This is the result worth keeping, and it is the single most informative
+comparison either session produced. Gain over `ours` by prior writes, against
+the exact Bayes identifiability at that visit count:
+
+```
+gain vs ours      0 (fresh)        1        2      3-4      5-8       9+
+ours+hist           +0.0826  +0.3131  +0.1402  +0.0587  +0.0163  -0.0294
+ours+bayes          -0.0145  +0.1222  +0.0506  +0.0279  +0.0683  +0.0928
+Bayes AUROC               -    0.687    0.786    0.890    0.977   0.9997
+```
+
+- **`ours+bayes` is the volatility mechanism, and it works exactly as this
+  directory theorised.** Its gain GROWS with identifiability, from -0.0145 on
+  fresh writes to +0.0928 at nine or more prior writes. Worth **+0.0393**. But
+  it carries `b_post`, the exact posterior `P(REVISED | value history)`, which
+  requires reading `N_OPT` and `P_REV` off the task generator. It is a ceiling,
+  not a buildable mechanism.
+- **`ours+hist` is something else, and it is the bigger effect.** Its gain runs
+  the OTHER way, five sixths of it at 0 to 2 prior writes, negative at 9+. It is
+  not identifying the key's class.
+
+So the volatility hypothesis is **vindicated in principle and worth +0.039**,
+while the +0.055 that a buildable feature set actually delivers comes from a
+different mechanism. Those two were tangled together in every number this
+directory reported, because class-AUROC cannot tell them apart.
+
+## What the big effect actually is
+
+Beta collapses to **~0.002 everywhere** in `ours+hist` and `ours+oracle`. Since
+`S_t k = (1-beta) S_{t-1} k + beta v` is an EMA with rate beta, driving beta
+toward zero makes the memory a **uniform running average over everything ever
+written to that address**: exactly right for NOISY, exactly wrong for REVISED.
+The per-class losses follow: NOISY improves 2.8751 to 2.7094, **REVISED gets
+worse**, 2.3705 to 2.3859.
+
+It is not a constant policy. Forcing `ours+hist` to its own mean beta costs
++0.2564, and the best constant over a 16-point grid reaches only 1.7517,
+because in EMA terms moving between 0.0005 and 0.01 is a 20x swing in update
+rate. That check validates itself on `none`, where forcing the mean costs
++0.0001.
+
+## And the original target is still not closed
+
+```
+arm            acc
+ours        0.6455
+ours+hist   0.6413     <- buys 0.055 nats, LOSES 0.4pp of accuracy
+ours+oracle 0.6484     not buildable
+ours+bayes  0.6491     not buildable
+```
+
+The 1.4pp accuracy edge that motivated this entire directory is moved only by
+the oracle arms. **Nothing buildable moves it.** The question this directory was
+convened to answer is, in the end, still open.
+
+## What this directory got right, and what it got wrong
+
+Right, and all of it survived an 18-attack adversarial audit: the measurement
+machinery, the +0.08 AUROC of information, the 0.945 Bayes ceiling, the
+visit-count identifiability curve, the task's absorbing states, NOISY being 28%
+repeats, the labelling trap, the signinit replay bug and its blast radius.
+
+Wrong: every inference drawn from class-AUROC to a decision. The metric
+mis-ranked its own features (`h_meane` first, the direction family last; loss
+reverses it) and could not separate the two effects above. **The lesson is not
+about volatility. It is that a proxy metric validated only against itself will
+rank confidently and wrongly, and that the only thing that caught it was running
+the expensive experiment the proxy was supposed to make unnecessary.**
