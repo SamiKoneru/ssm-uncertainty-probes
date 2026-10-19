@@ -395,3 +395,74 @@ the reason it works is not the reason that was proposed.
   `ours+hist` and +0.0001 on `ours+oracle`, the only column that is free to
   remove.
 - The `h_ratio` clamp never bound in training: 0.000% on every run.
+- **`ours+nvis` is unstable.** Seed sd 0.0384 and 0.0370 across the two
+  streams, 7 to 100x every other arm (seeds 1.5305 / 1.5982 / 1.5331). Giving
+  the gate a bare visit counter and nothing else makes training erratic. It is
+  also the arm that inflates the pooled-sd cross-check.
+- **`ours+bayes` has the best accuracy and the best REVISED loss** (0.6491 and
+  2.3439) while having only the third-best overall loss. The arms trade off
+  differently, so "which arm is best" depends on the metric.
+- The task's absorbing states dominate as 04 reported: 48% of positions have a
+  STABLE query, and `none` already scores 0.4437 nats there against 3.1287 on
+  NOISY.
+
+## Files
+
+```
+PREREGISTRATION.md   question, metric, bars, kill conditions, and four
+                     appendices. The first three were written before any
+                     number existed; the fourth says in its first line that
+                     it was not, and adds only controls that can shrink the
+                     headline.
+arms.py              the nine arms. All four primary gated arms are
+                     62,250 parameters and differ only in a 0/1 keep-mask.
+bayes.py             the exact Bayes posterior from task.py's generative
+                     process. Verified against 04's audit_bayes_ceiling.py:
+                     AUROC 0.9449 vs 0.9449, and the whole AUROC-by-visit
+                     table to three decimals.
+test_parity.py       the drift guard. n_hist=0 reproduces the shipped
+                     GatedDeltaSSM bit-for-bit; the masked control's columns
+                     are exactly zero; no gradient reaches any parameter
+                     through the bookkeeping; o_memb and the visit counts
+                     match a naive reimplementation written from the spec.
+run_arm.py           train one arm at one seed, published protocol
+run_all.sh           the 18 primary runs, two at a time
+run_bayes.sh         the ceiling arm, queued after run_all
+run_controls.sh      the two post-hoc controls, queued after run_bayes
+score.py             both loss metrics, the bars, the validity gate, the
+                     baseline-inflation check and the visit-count slices
+const_test.py        is it the beta LEVEL or the beta VARIATION?
+ablate.py            zero one history column at a time in a trained model
+gate_use.py          d beta / d feature, by autograd on real inputs
+beta_report.py       beta by class x write type, and the three-regime shape
+cost.py              load-robust timing, alternating inside one process
+logs/                one log per run, plus every analysis above
+results_5150.json    primary stream
+results_5151.json    held-out stream
+```
+
+## Reuse hazard, handled
+
+14 files in this repo score on `default_rng(12345)`, 04 used 777 and 888, and
+`validation-suite` used 202/303/404/505/606. Nothing here touches any of them.
+**5150** is the primary stream and **5151** was held out until the verdict was
+committed at `821dfb4`. 5152 was used once to smoke-test the scoring path on
+throwaway 2-step models and no decision rests on it.
+
+## What was NOT checked
+
+- **Crosstalk.** The bookkeeping is exact, one slot per symbol. A real layer
+  must hold this in superposition, and every per-key store attempted in this
+  repo died of crosstalk. These numbers are an UPPER BOUND on what a real
+  mechanism could deliver, and the gap is untested.
+- **Why the gain inverts across visit count** between `ours+hist` and
+  `ours+bayes`. The two profiles are the most interesting thing here and
+  neither is explained.
+- **Whether the beta collapse is reachable without history.** `const_test.py`
+  rules out a constant, but not a different parameterisation or schedule that
+  reaches the same low-beta averaging regime more cheaply. That is the obvious
+  next experiment and it is not run here.
+- **800 steps only.** `validation/convergence.log` records `ours` still
+  descending at 3000. All of this is the published operating point, not an
+  asymptote.
+- Anything at a different `d_k`, `d_v`, sequence length or `N_OPT`.
