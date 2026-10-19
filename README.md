@@ -1,8 +1,14 @@
 # ssm-uncertainty-probes
 
-Started as: *can an SSM's internal state provide an uncertainty signal that beats
-output entropy?* The answer is **no**, for a structural reason. A write-gating
-mechanism fell out of the machinery built to ask it, and that part works.
+Started from a simple question: *should how hard an SSM writes into a part of
+its memory depend on how much that part has been changing lately?* A slot that
+keeps flipping between a few values should be written softly; one that has
+changed for good should be overwritten. That part works: a write gate that can
+see what the memory already holds gives a replicated ~5.5% loss reduction.
+
+Pursuing it raised a second question: *can the same memory signals predict when
+the model is about to be wrong, better than output entropy?* The answer is
+**no**, for a structural reason.
 
 ```
 gated_delta_ssm/     THE ARCHITECTURE - clean, runnable, self-contained
@@ -20,7 +26,7 @@ It is **prior art** - Miras 2504.13173, CARVE 2606.27229, and variable-step-size
 LMS from the late 1980s. Verified by reading the equations. Treat it as a clean
 reference implementation, not a contribution.
 
-## Why the original question is closed
+## Why the uncertainty question is closed
 
 Cross-entropy is a **proper scoring rule**, so training pays the model directly
 to fold every available and useful signal into its posterior, and entropy is a
