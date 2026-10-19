@@ -1,0 +1,12 @@
+arm ours_pub  seed 2  800 steps  batch 24  2 threads
+  step    0  loss 3.9489  1s
+  step  100  loss 1.7660  59s
+  step  200  loss 1.4489  216s
+  step  300  loss 1.5177  415s
+  step  400  loss 1.6522  646s
+  step  500  loss 1.6634  832s
+  step  600  loss 1.2825  1024s
+  step  700  loss 1.6592  1259s
+  step  799  loss 1.4873  1426s
+saved /Users/skon/Desktop/Projects/ssm-uncertainty-probes/.claude/worktrees/sharp-dubinsky-67ebc6/process/05_history_loss/checkpoints/ours_pub_seed2.pt   1426s   params 62,058   h_ratio clamp rate 0.000%
+RESULT {"arm": "ours_pub", "seed": 2, "secs": 1425.9, "params": 62058, "clamp": 0.0}

@@ -1,0 +1,12 @@
+arm ours+oracle  seed 2  800 steps  batch 24  2 threads
+  step    0  loss 3.9498  1s
+  step  100  loss 1.7521  65s
+  step  200  loss 1.4399  269s
+  step  300  loss 1.5018  477s
+  step  400  loss 1.6246  699s
+  step  500  loss 1.6293  948s
+  step  600  loss 1.2516  1149s
+  step  700  loss 1.6000  1364s
+  step  799  loss 1.4264  1588s
+saved /Users/skon/Desktop/Projects/ssm-uncertainty-probes/.claude/worktrees/sharp-dubinsky-67ebc6/process/05_history_loss/checkpoints/ours_oracle_seed2.pt   1588s   params 62,250   h_ratio clamp rate 0.000%
+RESULT {"arm": "ours+oracle", "seed": 2, "secs": 1587.7, "params": 62250, "clamp": 0.0}
