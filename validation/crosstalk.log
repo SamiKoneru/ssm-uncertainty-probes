@@ -1,0 +1,38 @@
+n = 64 distinct key addresses, measured on the `none` baseline, 2 seeds
+
+    d  n<=d  floor  coh rms coh mean coh max  e floor   first  REPEAT
+   16 False  0.218   0.2215   0.1689  0.9439    1.732   1.000   0.998
+   24 False  0.163   0.1659   0.1047  0.9767    1.291   1.000   0.995
+   32 False  0.126   0.1308   0.0757  0.9484    1.000   1.000   0.992
+   48 False  0.073   0.0797   0.0642  0.2906    0.577   1.019   0.867
+   64  True  0.000   0.0592   0.0473  0.2523    0.000   1.027   0.809
+  128  True  0.000   0.0440   0.0349  0.1647    0.000   1.036   0.633
+
+
+AGAINST THE PRE-REGISTERED PREDICTIONS
+
+  P1 RMS coherence against its exact achievable floor
+    d=  16  floor 0.2182  measured 0.2215  slack +0.0033   AT FLOOR
+    d=  24  floor 0.1627  measured 0.1659  slack +0.0032   AT FLOOR
+    d=  32  floor 0.1260  measured 0.1308  slack +0.0048   AT FLOOR
+    d=  48  floor 0.0727  measured 0.0797  slack +0.0069   AT FLOOR
+    d=  64  floor 0.0000  measured 0.0592  slack +0.0592
+    d= 128  floor 0.0000  measured 0.0440  slack +0.0440
+    n<=d mean 0.0516  vs  n>d mean 0.1495  PASS
+
+  P2 repeat-write ||e||/||v|| against its implied floor
+    d=  16  floor 1.732  measured 0.998
+    d=  24  floor 1.291  measured 0.995
+    d=  32  floor 1.000  measured 0.992
+    d=  48  floor 0.577  measured 0.867
+    d=  64  floor 0.000  measured 0.809
+    d= 128  floor 0.000  measured 0.633
+    n<=d mean 0.7207  vs  n>d mean 0.9629  PASS
+
+  KILL CHECK repeat ||e||/||v|| at d=128: 0.6325
+    near 0 supports crosstalk. Still large means either SGD did
+    not find the orthogonal keys available to it (check P1 at
+    d=128), or the gate's gain is not about crosstalk at all.
+
+  CONTRAST first-write ||e||/||v|| should be ~1 at every d: [np.float64(1.0), np.float64(1.0), np.float64(1.0), np.float64(1.019), np.float64(1.027), np.float64(1.036)]
+    far from 1 means the measurement is broken, not the theory.
