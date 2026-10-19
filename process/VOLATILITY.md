@@ -254,14 +254,20 @@ supposed to make unnecessary.
 
 ## Where the code is
 
-Three branches, **none merged to main**, and the two audit directories collide
-on the `05_` prefix, so a merge needs one renamed.
+Three branches, **none merged to main**.
 
 ```
 claude/optimistic-easley-09c6ab   process/04_volatility_history/    separability + AUDIT.md
 claude/audit-volatility-05        process/05_audit_volatility/      the 18-attack audit
 claude/sharp-dubinsky-67ebc6      process/05_history_loss/          the loss experiment
 ```
+
+`05_audit_volatility/` and `05_history_loss/` share only the `05_` numbering,
+not a path, so nothing needs renaming. The real merge hazard is that
+`claude/audit-volatility-05` was cut from `claude/optimistic-easley-09c6ab`
+early and so carries a **stale `04_volatility_history/`** from before every
+retraction below; a merge must take `04` from `optimistic-easley` rather than
+from the audit branch. Both branches also touch `process/README.md`.
 
 Each directory carries its own pre-registration written before any measurement,
 its own bars, and its logs. `04/AUDIT.md` records what the audit found against
