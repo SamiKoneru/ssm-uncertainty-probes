@@ -1,0 +1,10 @@
+done ours_nvis_seed0: RESULT {"arm": "ours+nvis", "seed": 0, "secs": 1559.5, "params": 62250, "clamp": 0.0}
+done ours_fresh_seed0: RESULT {"arm": "ours+fresh", "seed": 0, "secs": 1561.9, "params": 62314, "clamp": 0.0}
+CONTROL SEED 0 COMPLETE
+done ours_nvis_seed1: RESULT {"arm": "ours+nvis", "seed": 1, "secs": 544.9, "params": 62250, "clamp": 0.0}
+done ours_fresh_seed1: RESULT {"arm": "ours+fresh", "seed": 1, "secs": 548.2, "params": 62314, "clamp": 0.0}
+CONTROL SEED 1 COMPLETE
+done ours_nvis_seed2: RESULT {"arm": "ours+nvis", "seed": 2, "secs": 530.5, "params": 62250, "clamp": 1e-06}
+done ours_fresh_seed2: RESULT {"arm": "ours+fresh", "seed": 2, "secs": 533.9, "params": 62314, "clamp": 1e-06}
+CONTROL SEED 2 COMPLETE
+ALL_CONTROLS_DONE

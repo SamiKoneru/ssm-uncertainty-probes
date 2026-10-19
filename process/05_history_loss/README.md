@@ -47,8 +47,12 @@ ours+hist        62,250  1.4966   1.4998   1.4974   1.4979  0.0017  +0.0551   PA
 ours+rate        62,250  1.5511   1.5489   1.5410   1.5470  0.0054  +0.0060   KILL
 ours+oracle      62,250  1.4829   1.4830   1.4838   1.4832  0.0005  +0.0698   PASS
 ours+bayes       62,282  1.5129   1.5180   1.5103   1.5137  0.0039  +0.0393   PASS
+ours+nvis    *   62,250  1.5305   1.5982   1.5331   1.5539  0.0384  -0.0009   KILL
+ours+fresh   *   62,314  1.5496   1.5502   1.5498   1.5499  0.0003  +0.0032   KILL
 ours_pub         62,058  1.5544   1.5509   1.5474   1.5509  0.0035      -
 ```
+
+`*` = control arm added after seeing seed 0, able only to shrink the headline.
 
 All four gated arms in the primary set are **parameter-identical at 62,250**
 and differ only in a 0/1 keep-mask over the history columns, so this does not
@@ -70,6 +74,38 @@ result whose verdict the bar's exact placement decides, and the baseline check
 below pushes it further down rather than up: against `ours_pub` the gain is
 +0.0039. 04's strongest single separability feature is worth almost nothing on
 loss by itself.
+
+### The visit-counter explanation is refuted
+
+The gain profile below concentrates at low visit counts, which fits "the gate
+learned a per-address visit counter" better than it fits volatility. A counter
+costs `d_k`, not `d_k x d_v`, and has nothing to do with volatility, so this
+needed its own arm rather than an argument.
+
+```
+ours+nvis    h_nvis alone, param-matched      -0.0009    KILL
+ours+fresh   a single "ever written" bit      +0.0032    KILL
+ours+hist    all five together                +0.0551    PASS
+```
+
+**The counter alone is worth nothing and the fresh bit is worth half the
+bar.** Neither comes near +0.0551, so the gain is not a visit counter and is
+not the implicit first-write indicator either.
+
+What it is instead is **superadditive**. The two strongest single features,
+measured alone as arms, buy +0.0060 (`h_meane`) and -0.0009 (`h_nvis`); the
+five together buy +0.0551. Eval-time ablation on the trained `ours+hist`, 3
+seeds, shows the same from the other side:
+
+```
+drop h_meane      +0.0934        drop h_cos      +0.0299
+drop h_nvis       +0.0778        drop h_ratio    +0.0006
+drop h_cosmean    +0.0544        drop ALL        +0.2480
+```
+
+`h_meane` is worth +0.0060 as a standalone arm and +0.0934 to remove from the
+trained set, a 15x gap. The features are not independent contributions; the
+gate co-adapts to the whole block.
 
 ### Every gain is inflated by +0.0022
 
@@ -116,6 +152,24 @@ Bayes AUROC               -    0.687    0.786    0.890    0.977   0.9997
 Backwards. Five sixths of the gain sits at 0 to 2 prior visits, and the sign
 flips negative at 9+ where the class is essentially certain. A mechanism that
 worked by identifying a key's long-run behaviour would do the opposite.
+
+**And `ours+bayes` does exactly the opposite, which is the most informative
+single comparison here:**
+
+```
+gain vs ours      0 (fresh)        1        2      3-4      5-8       9+
+ours+hist           +0.0826  +0.3131  +0.1402  +0.0587  +0.0163  -0.0294
+ours+bayes          -0.0145  +0.1222  +0.0506  +0.0279  +0.0683  +0.0928
+Bayes AUROC               -    0.687    0.786    0.890    0.977   0.9997
+```
+
+The arm holding the sufficient statistic gains **where identifiability is
+highest** and loses on fresh writes. That is the volatility mechanism behaving
+exactly as 04 theorised. So the honest reading is that **there are two
+different effects here**: a genuine identifiability effect, visible in
+`ours+bayes`, worth +0.0393 and requiring a feature that reads `N_OPT` and
+`P_REV` off the task generator; and a larger effect in `ours+hist` that runs
+the other way and is not about identifying the key's class at all.
 
 Caveat on this table, which matters: the bins slice by prior writes to the
 QUERY address `x_t`, while the gate's features describe the WRITE address
