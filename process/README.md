@@ -1,5 +1,12 @@
 # Process
 
+> **The volatility-history question is settled and its answer spans three
+> directories on three branches. [`VOLATILITY.md`](VOLATILITY.md) tells it as
+> one story: the question, the ten decisive tests, the two effects that turned
+> out to be tangled together, the eight retractions, and what is still open.
+> Read that rather than reconstructing it from the per-directory READMEs,
+> which were each written while the answer was still moving.**
+
 How the architecture in `../gated_delta_ssm/` was arrived at, and the three
 questions that were answered negatively on the way. Each phase keeps only the
 scripts that establish something; everything else is under `archive/`.
