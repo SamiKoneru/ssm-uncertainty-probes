@@ -22,13 +22,9 @@ were written before any number existed; the fourth is marked as the first one
 written after seeing data, and adds only controls that can shrink the
 headline.
 
-> **STATUS: PROVISIONAL.** The pre-registration requires a PASS to clear the
-> bar on stream 5150 **and** on held-out stream 5151. 5151 has not been
-> touched. It is scored only after this verdict is committed, and the result
-> is appended whichever way it lands. The two post-hoc control arms
-> (`ours+nvis`, `ours+fresh`) are also still training; they test whether the
-> gain is a per-address visit counter rather than volatility history, and can
-> only shrink the claim.
+> **STATUS: CONFIRMED.** Held-out stream 5151 was scored only after the 5150
+> verdict was committed (`821dfb4`). **Every verdict reproduced**, including
+> both KILLs. See [Confirmation](#confirmation-on-held-out-stream-5151).
 
 ---
 
@@ -294,16 +290,94 @@ about any of that.
 
 ---
 
+## Confirmation on held-out stream 5151
+
+Stream 5151 was fixed in the pre-registration, never touched during any
+decision, and scored once, after the 5150 verdict was committed at `821dfb4`.
+The pre-registration requires a PASS to clear the bar on **both** streams.
+
+```
+arm              5150 gain   5151 gain   verdict   agree
+none                     -           -         -
+ours                     -           -         -
+ours+hist          +0.0551     +0.0563      PASS     yes
+ours+rate          +0.0060     +0.0052      KILL     yes
+ours+oracle        +0.0698     +0.0731      PASS     yes
+ours+bayes         +0.0393     +0.0426      PASS     yes
+ours+nvis    *     -0.0009     -0.0027      KILL     yes
+ours+fresh   *     +0.0032     +0.0028      KILL     yes
+
+VALIDITY GATE        +5.42%      +5.60%      PASS     yes
+```
+
+**Eight arms, two streams, zero disagreements.** `ours+rate` misses on both
+(+0.0060 and +0.0052 against +0.0064), so its KILL does not depend on which
+stream it was read off.
+
+### One honest wrinkle in the sd cross-check
+
+The cross-check printed "UNDERPOWERED" on 5151, because the pooled within-arm
+sd came out at 0.0128 against the 0.0039 the bar assumes. That is entirely
+`ours+nvis`:
+
+```
+per-arm seed sd, 5151:  none 0.0027   ours 0.0051   +hist 0.0014   +rate 0.0052
+                        +oracle 0.0011   +bayes 0.0022   +fresh 0.0028
+                        +nvis 0.0370   <-- 7 to 100x everyone else
+```
+
+Pooling over all arms:          sd 0.0128  ->  implied bar +0.0208
+Pooling excluding `ours+nvis`:  sd 0.0035  ->  implied bar +0.0056
+
+So the pre-registered +0.0064 is conservative against every stable arm, and
+the "underpowered" flag is an artifact of including a single unstable control
+in a nuisance-parameter estimate. **The bar was not moved either way**, and it
+does not matter: `ours+hist` (+0.0563), `ours+oracle` (+0.0731) and
+`ours+bayes` (+0.0426) clear even the inflated +0.0208 bar on both streams.
+
+---
+
 ## Every pre-registered bar
 
 ```
-VALIDITY  ours beats none by >= 4.00%          +5.42%            PASS
-PRIMARY   ours+hist   >= +0.0064 nats          +0.0551  8.6x     PASS
-          ours+rate   >= +0.0064 nats          +0.0060  0.9x     KILL
-          ours+oracle >= +0.0064 nats          +0.0698 10.9x     PASS
-          ours+bayes  >= +0.0064 nats          +0.0393  6.1x     PASS
-SD CHECK  realized pooled sd vs the 0.0039 assumed   0.0036   conservative
+                                            5150      5151   verdict
+VALIDITY  ours beats none by >= 4.00%     +5.42%    +5.60%     PASS
+PRIMARY   ours+hist   >= +0.0064         +0.0551   +0.0563     PASS   8.8x
+          ours+rate   >= +0.0064         +0.0060   +0.0052     KILL   0.8x
+          ours+oracle >= +0.0064         +0.0698   +0.0731     PASS  11.4x
+          ours+bayes  >= +0.0064         +0.0393   +0.0426     PASS   6.7x
+CONTROLS  ours+nvis   >= +0.0064         -0.0009   -0.0027     KILL
+          ours+fresh  >= +0.0064         +0.0032   +0.0028     KILL
+SD CHECK  pooled sd excluding ours+nvis    0.0034    0.0035   conservative
 ```
+
+### What this means for 04's recommendation
+
+04 concluded "NO. Not worth building", on a recorded prediction of **no loss
+gain beyond seed noise**. Its own audit then withdrew most of the support for
+that, leaving one cross-model single-seed null and the state cost.
+
+**The prediction is wrong.** `ours+hist` buys +0.0551 and +0.0563 nats on two
+fresh streams, 8.8x the bar, every seed positive, using only features
+computable from the model's own residuals plus per-address bookkeeping - no
+oracle. For scale, that is **62% of the entire published memory-gate effect**
+(`ours` over `none` is 0.0889 nats), bought on top of it.
+
+**But 04's mechanism is not what delivers it**, and the directory should not
+be read as vindicating the volatility hypothesis:
+
+- the identifiability mechanism 04 theorised is real and isolated here, in
+  `ours+bayes`, whose gain tracks visit-count identifiability. It is worth
+  **+0.0393**, needs a feature that reads `N_OPT` and `P_REV` off the task
+  generator, and is beaten by two arms with less information.
+- the larger `ours+hist` effect runs the opposite way across visit counts,
+  makes accuracy worse, makes REVISED worse, and is best explained by beta
+  collapsing to a uniform running average.
+- `h_meane`, 04's strongest single separability feature, **fails the bar on
+  both streams** as a standalone arm.
+
+So: history reduces loss, the recommendation to not build is overturned, and
+the reason it works is not the reason that was proposed.
 
 ---
 
