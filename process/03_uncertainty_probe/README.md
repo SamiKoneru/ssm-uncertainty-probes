@@ -273,7 +273,7 @@ sys.path header so any of them runs from where it sits.
                          policies, class randomised per sequence so an
                          input-only gate PROVABLY cannot differentiate
 
-    A_uncertainty/       the original question - CLOSED
+    A_uncertainty/       the uncertainty question - CLOSED
       probe_test.py      *** THE RESULT. GBM over state + all features: 0.8823
                          vs 0.8755 for entropy+maxprob (+0.007).
       induction_run.py   u 0.808 -> error, 0.948 -> contested; entropy 0.958

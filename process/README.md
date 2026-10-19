@@ -4,9 +4,12 @@ How the architecture in `../gated_delta_ssm/` was arrived at, and the three
 questions that were answered negatively on the way. Each phase keeps only the
 scripts that establish something; everything else is under `archive/`.
 
-The original question was: **can an SSM's internal state provide an uncertainty
-signal that beats output entropy?** The answer is no, for a structural reason,
-and the write gate is a spin-off from the machinery built to ask it.
+The motivating question was whether write strength should depend on how much
+a memory slot has been changing lately; that became the write gate. Alongside
+it ran the uncertainty question: **can an SSM's internal state provide an
+uncertainty signal that beats output entropy?** The answer is no, for a
+structural reason. The two share the same machinery, which is why the phases
+below interleave them.
 
 ---
 
