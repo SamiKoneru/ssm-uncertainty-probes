@@ -1,0 +1,15 @@
+stream 5150   seed 0   EXPLORATORY, seed-0 motivated
+
+arm            as trained  mean beta  @ own mean  variation  best const  at beta  headroom
+none               1.6433     0.3883      1.6433    +0.0001      1.6434   0.4000   +0.0002
+ours               1.5577     0.1141      1.7081    +0.1504      1.6631   0.3000   +0.1054
+ours+hist          1.4966     0.0021      1.7530    +0.2564      1.7517   0.0020   +0.2552
+ours+rate          1.5511     0.0925      1.7276    +0.1765      1.6641   0.3000   +0.1130
+ours+oracle        1.4829     0.0018      1.8053    +0.3224      1.8092   0.0010   +0.3263
+ours_pub           1.5544     0.2974      1.6667    +0.1123      1.6667   0.3000   +0.1123
+
+  variation = loss(forced to own mean) - loss(as trained).
+              ~0 means the gate is a constant in disguise;
+              large positive means its VARIATION is load bearing.
+  headroom  = loss(best single constant) - loss(as trained).
+              <= 0 would mean no conditioning was needed at all.

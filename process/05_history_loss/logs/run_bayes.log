@@ -1,0 +1,4 @@
+done ours_bayes_seed1: RESULT {"arm": "ours+bayes", "seed": 1, "secs": 1689.0, "params": 62282, "clamp": 0.0}
+done ours_bayes_seed0: RESULT {"arm": "ours+bayes", "seed": 0, "secs": 1692.5, "params": 62282, "clamp": 0.0}
+done ours_bayes_seed2: RESULT {"arm": "ours+bayes", "seed": 2, "secs": 1390.4, "params": 62282, "clamp": 0.0}
+ALL_BAYES_DONE
