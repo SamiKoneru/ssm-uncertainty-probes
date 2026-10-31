@@ -1,0 +1,41 @@
+
+==========================================================================
+TEST 1  is the address really the PREVIOUS token? (model weights forced)
+==========================================================================
+  tokens: [3, 7, 11, 7, 25, 7, 3, 19]
+
+  t  argmax k_t   x_{t-1}  argmax v_t    x_t   ok
+  0           0      None           3      3  pad
+  1           3         3           7      7   ok
+  2           7         7          11     11   ok
+  3          11        11           7      7   ok
+  4           7         7          25     25   ok
+  5          25        25           7      7   ok
+  6           7         7           3      3   ok
+  7           3         3          19     19   ok
+
+  address = previous token, value = current token: CONFIRMED
+
+==========================================================================
+TEST 2  vectorised bookkeeping vs a naive reimplementation
+==========================================================================
+
+case                          n writes    wtype   o_memb
+all repeats (absorbing)             12       ok       ok
+strict alternation                   8       ok       ok
+revise once then hold               12       ok       ok
+cycle through a 3-set               12       ok       ok
+never repeats an address            12       ok       ok
+
+  vectorised bookkeeping == naive reimplementation: CONFIRMED
+
+==========================================================================
+TEST 3  is cls_w really class(x_{t-1})?
+==========================================================================
+  cls_w[t] != class(x_{t-1}) on 0 of 1020 writes
+  cls_q[t] != class(x_t)        on 0 of 1020 writes
+
+  labelling: CONFIRMED
+
+==========================================================================
+ALL THREE: PASS

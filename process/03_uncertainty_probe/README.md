@@ -74,6 +74,14 @@ that CHANGED a value.** Pooled with repeat-writes it inverts to 0.353:
     NOISY   = ~all changes (e large, but the new value is a MEMBER of the stored
                             set, so e is SMALLER than a fresh one)
 
+    CORRECTION (../04_volatility_history): "NOISY = ~all changes" is WRONG.
+    Among writes to an address seen before, NOISY is 28% repeats, because a
+    redraw from N_OPT=4 options repeats about 1 in 4. REVISED's 65% is exactly
+    right (measured 0.656). The refutation was already in logs/s3.log, in its
+    run lengths: NOISY 1.350, REVISED 2.292. Also "e ~ 0" on repeats is wrong:
+    mean ||e|| on repeat writes is 4.24 against 8.57 on change writes, not
+    zero, because keys are only approximately orthogonal.
+
     pooled:          NOISY 7.55 > REVISED 6.82     (REVISED dragged down by repeats)
     within changes:  REVISED   > NOISY             (its changes are to novel values)
 
@@ -87,10 +95,44 @@ Everything built to fix that non-existent problem, and all of it wasted:
 a plain-accumulation rate memory, an overlap rate memory, and a non-overwriting
 value matrix for recurrence detection. All null.
 
+**CORRECTION on WHY two of those are null** (`../04_volatility_history`). The
+verdicts hold; the reasons on file do not.
+
+- the **delta-rule rate memory** did NOT fail from crosstalk. Its logged
+  `c_t` AUROC of 0.3690 (`logs/rate.log`) is 0.631 with the sign flipped,
+  against an exact crosstalk-free ceiling of 0.681 for the same statistic, so
+  it recovered about half the available separation: 0.513 on one model and 0.481
+  on a second (`../05_audit_volatility`). An earlier version of this note said
+  93%, which was a ratio of raw AUROCs rather than of excess over the 0.5 null;
+  the correct arithmetic on the same two numbers gives 0.723 and the measurement
+  gives 0.51. The shortfall decomposes into roughly 40% from using an EMA rather
+  than an exact per-address mean and only 12 to 21% from superposition
+  crosstalk. It carried the signal and
+  still bought 5.12% loss against the plain gate's 4.93%, inside seed noise.
+  **The information is not worth much to the loss.** That is a stronger
+  negative than "crosstalk ate it", and it is the single most useful result in
+  this thread for anyone considering a volatility memory.
+- **`s3` is null, but `s3_test.py` did not show it.** That file reports a
+  pooled difference of MEANS (-0.0248) with no AUROC, on an UNGATED model, so
+  it is the exact conditioning this section warns about. Measured properly,
+  `s3` is 0.424 to 0.436 AUROC alone and adds +0.002 to +0.003 over the other
+  zero-extra-state features, inside one bootstrap SD. Its stated prediction is
+  also backwards: `||stored||` reads LOWER on REVISED, not higher.
+
 **The actual deficit was gate CAPACITY.** 3->16->1 was too small; 3->64->64->1
 found the right policy with no new features and no new state (+0.74pp). An
 explicit `s1*s2` interaction term helped LESS (+0.30pp) than simply adding width,
 so the network can find the interaction, it just needed room.
+
+REFINED (`../04_volatility_history/gate_capacity.py`): capacity is not the
+binding constraint at the shipped width. The exact `3 -> 32 -> 32 -> 1` gate
+shape, trained DIRECTLY on the class label, reaches AUROC 0.8127 on its own
+three features, beating a gradient-boosted tree's 0.8095, and width 128 adds
+nothing. So the architecture can already represent the needed function and the
+remaining oracle gap is CREDIT ASSIGNMENT: the real gate only ever sees the
+downstream LM gradient, never a class label. The cheap lever is the learning
+signal (auxiliary loss, longer schedule, initialisation), not width and not
+new state.
 
 ## What was tried and failed (do not repeat)
 
@@ -101,6 +143,11 @@ so the network can find the interaction, it just needed room.
   memory in three flavours) died the same way. **Any per-key store in this
   architecture is a superposition, and superposition crosstalk with correlated
   learned keys kills signals of this size.**
+  CORRECTION (`../04_volatility_history`): too strong, and it rests on the
+  cosine 0.68 that `key_geometry.py` later refuted (the shipped model's keys
+  sit at 0.0701). The `C` rate memory kept about half of its statistic's available
+  separation. Crosstalk is real for the `R` accumulator, where the read happens
+  at `q` and not `k`, but it is not a general law about per-key stores here.
 - **Normalised readout** `(R.q)/(Z.q)`: `Z.q` goes negative on 55% of queries.
   Forcing non-negative keys caps selectivity at **2/pi = 0.637 mean cosine,
   independent of dimension** - non-negative vectors occupy one orthant and cannot
@@ -252,6 +299,38 @@ Kwong & Johnston VSS-LMS 1992 | Gao & Xie 2001 | Gollamudi SM-NLMS 1998
   are locked by sources read directly.
 - ~30 distinct 2026 papers modify the delta-rule write gate. Concurrent
   unpublished work is invisible and the base rate is high.
+
+## A BUG IN THIS DIRECTORY, found 2026-10-18 (`../04_volatility_history/AUDIT.md`)
+
+`archive/failed_features/signinit_test.py:88` replays the trained model as
+
+    beta = torch.sigmoid(m.to_b(xc))[..., 0]           # INPUT-ONLY beta
+
+but it trains `gate="both"`, whose gate is `gated_model.py:107`
+
+    beta = sigmoid( W x_t + a1*log1p(||e_t||) + a2*prj_t + b )
+
+and a1, a2 train to about +0.96 and -1.41. So the state its class-predictability
+block accumulates is NOT the trained model's state, and the `(s1,s2)` measured
+off it come from a recurrence that was never trained. There is no assert against
+the model's own forward pass, which is why it survived.
+
+Consequence: **`logs/signinit.log`'s whole "CLASS PREDICTABILITY" block is
+measured on the wrong recurrence**, including the 0.4763 that
+`archive/failed_features/rate_test.py:11` adopted as its pass bar. Corrected,
+that model's `(s1,s2)` carry 0.7787 pooled, and the "the gap to the oracle is
+INFORMATION-limited" reading does not hold even for that model.
+
+**The bug is isolated to that one file.** Six scripts here hand-roll the
+recurrence the same way; five train `gate="none"`, for which
+`sigmoid(to_b(xc))` IS the model's beta, so `A_uncertainty/probe_test.py` (this
+project's headline answer), `address_test.py`, `cosine_test.py`, `s3_test.py`
+and `readout_blend.py` are unaffected. `recurrence_test.py` uses the real MLP
+gate, which is why its 0.834 and 0.353 reproduce on fresh streams.
+
+Lesson, and it is cheap: **any script that re-implements the recurrence outside
+the model must assert its logits match the model's own forward pass.**
+`../04_volatility_history/features.py` does; this file did not.
 
 ## CODE MAP
 

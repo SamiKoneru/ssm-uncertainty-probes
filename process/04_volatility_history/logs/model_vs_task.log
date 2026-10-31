@@ -1,0 +1,14 @@
+NOISY vs REVISED, exact bookkeeping, class(x_{t-1}) labelling.
+Both models over the same streams and the same 6 batches of 32.
+
+model                         stream  s1 pooled  s1 change   (s1,s2) gbm pooled
+legacy linear gate=both          777     0.4869     0.7372         0.6161 +/-0.0079
+legacy linear gate=both          888     0.4909     0.7406         0.6041 +/-0.0078
+legacy linear gate=both          999     0.4867     0.7516         0.6150 +/-0.0072
+shipped MLP 3->32->32->1         777     0.3569     0.8073         0.8073 +/-0.0058
+shipped MLP 3->32->32->1         888     0.3589     0.8121         0.7963 +/-0.0064
+shipped MLP 3->32->32->1         999     0.3490     0.8092         0.8168 +/-0.0054
+
+and the loss each model reaches, for context:
+  legacy linear gate=both   1.5882   (+2.74% vs the 1.6329 baseline)
+  shipped MLP w=32          1.5428   (+5.47%)

@@ -1,0 +1,11 @@
+training gated_seed0, 800 steps, 2 threads
+  step    0  loss 3.8216  2s
+  step  100  loss 1.7723  206s
+  step  200  loss 1.5075  421s
+  step  300  loss 1.7300  571s
+  step  400  loss 1.6201  705s
+  step  500  loss 1.6970  772s
+  step  600  loss 1.7882  883s
+  step  700  loss 1.5480  1051s
+  step  799  loss 1.6039  1227s
+saved /Users/skon/Desktop/Projects/ssm-uncertainty-probes/.claude/worktrees/optimistic-easley-09c6ab/process/04_volatility_history/checkpoints/gated_seed0.pt

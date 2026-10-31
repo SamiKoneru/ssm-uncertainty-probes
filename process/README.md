@@ -1,5 +1,12 @@
 # Process
 
+> **The volatility-history question is settled and its answer spans three
+> directories on three branches. [`VOLATILITY.md`](VOLATILITY.md) tells it as
+> one story: the question, the ten decisive tests, the two effects that turned
+> out to be tangled together, the eight retractions, and what is still open.
+> Read that rather than reconstructing it from the per-directory READMEs,
+> which were each written while the answer was still moving.**
+
 How the architecture in `../gated_delta_ssm/` was arrived at, and the three
 questions that were answered negatively on the way. Each phase keeps only the
 scripts that establish something; everything else is under `archive/`.
@@ -111,6 +118,58 @@ SIMPSON'S PARADOX that invalidated four of my own proposals:
 
     s1 separates the two hard key classes at AUROC 0.834 on CHANGE writes
                                        and at AUROC 0.353 POOLED
+
+Both verified on two fresh eval streams in `04_volatility_history` (0.8073 and
+0.8121 on change writes, 0.3569 and 0.3589 pooled). Two traps around them:
+
+  - `logs/signinit.log:15` reads `AUROC NOISY vs rest: 0.8345`. That is a
+    DIFFERENT contrast and the agreement to three decimals is a coincidence.
+  - `archive/failed_features/rate_test.py:11` says "(s1,s2) gets 0.476, i.e.
+    chance". That number (`logs/signinit.log:17`) is a 3-way classifier's
+    P(REVISED) scored POOLED. **It is correct for the model it was measured
+    on**, and reproduces to within 0.005 (`04_volatility_history/legacy_0476.py`
+    gets 0.4712 against the logged 0.4763, with all three one-vs-rest AUROCs
+    inside 0.002). But it does NOT describe the gate that ships.
+
+    **The 0.476 is the product of a BUG, isolated to that one file.**
+    `signinit_test.py:88` replays the trained model as
+    `beta = torch.sigmoid(m.to_b(xc))`, the INPUT-ONLY beta, but the model it
+    trained is `gate="both"`, whose gate is `gated_model.py:107`
+    `beta = sigmoid(W x + a1*log1p(||e||) + a2*prj + b)` with a1 = 0.96 and
+    a2 = -1.41 after training. So the `S` it accumulates is not the trained
+    model's and the `(s1,s2)` read off it come from a recurrence that was never
+    trained. The file has no assert against the model's own forward pass.
+
+    Same model, same stream, same features, only the replay's beta differing
+    (`04_volatility_history/logs/audit_signinit_bug.log`):
+
+        replay                                        [s1,s2]  all five
+        signinit's: beta = sigmoid(W x)                0.6161    0.6581
+        correct:    beta = sigmoid(W x + a1 s1 + ...)  0.7787    0.7910
+
+    So that model's features carry **0.79**, and signinit's conclusion that the
+    gap to the oracle is information-limited was not right about its own model
+    either. The shipped MLP gate carries 0.81, so there IS a small monotone
+    trend in gate quality (0.791 / 0.812 / 0.837 across three gates, exploratory
+    n=3), but it is +0.046, not the +0.19 that `04_volatility_history` first
+    published off the buggy figure.
+
+    **Checked for the same bug elsewhere: it is isolated.** Six files hand-roll
+    the recurrence with `beta = sigmoid(m.to_b(xc))`. Five of them train
+    `gate="none"`, for which that IS the model's beta, so `probe_test.py` (the
+    answer to this project's original question), `address_test.py`,
+    `cosine_test.py`, `s3_test.py` and `readout_blend.py` are all unaffected.
+    `recurrence_test.py` uses the real MLP gate, which is why its 0.834 and
+    0.353 reproduce. `signinit_test.py` is the only one whose replay and whose
+    trained gate disagree.
+
+    Independently of all that, the bar built on 0.476 was read with the wrong
+    sign. `logs/rate.log` has `rate_delta c_t AUROC = 0.3690` against that 0.476
+    reference, and 0.369 was taken as the weaker number. It is the stronger one:
+    AUROC is directional, so |0.369 - 0.5| = 0.131 against |0.476 - 0.5| =
+    0.024. **The rate memory cleared its own pass bar by 5x and was recorded as
+    failing it.** It still bought no loss, which is the real result; see
+    `03_uncertainty_probe/README.md`.
 
     REVISED = 65% repeats (e~0) + 35% changes to genuinely NOVEL values
     NOISY   = ~all changes, but to values ALREADY in the stored set

@@ -1,0 +1,23 @@
+training the legacy gate="both", a_init=(0,0) model, 800 steps
+  step    0 loss 3.7944
+  step  200 loss 1.5923
+  step  400 loss 1.6764
+  step  600 loss 1.8436
+  step  799 loss 1.6487
+
+signinit_test's procedure, on signinit_test's model and stream:
+  3-way accuracy 0.6545   (chance 0.5053)   signinit logged 0.6485 / 0.5053
+    AUROC STABLE   vs rest: 0.9337   logged 0.9317   diff +0.0020
+    AUROC NOISY    vs rest: 0.8365   logged 0.8345   diff +0.0020
+    AUROC REVISED  vs rest: 0.7385   logged 0.7396   diff -0.0011
+    AUROC NOISY vs REVISED only: 0.4712   logged 0.4763   diff -0.0051
+
+  BAR: |diff| <= 0.04 on the NOISY-vs-REVISED number -> PASS
+
+and the SAME legacy model read correctly: s1 alone, 2-class,
+NOISY vs REVISED, by write type (exact bookkeeping):
+    all seen writes        s1 AUROC 0.4870   n 11072
+    CHANGE writes only     s1 AUROC 0.7589   n 6009
+    REPEAT writes only     s1 AUROC 0.4973   n 5063
+    pooled, (s1,s2) joint, logit  AUROC 0.5163 +/- 0.0121
+    pooled, (s1,s2) joint, gbm    AUROC 0.5945 +/- 0.0105

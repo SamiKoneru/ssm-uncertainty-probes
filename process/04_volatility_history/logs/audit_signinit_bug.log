@@ -1,0 +1,11 @@
+trained gate coefficients: a1 = 0.9578, a2 = -1.4115, b = -0.2161
+signinit's replay drops both a1 and a2, so its beta is the input-only one.
+
+replay                                           [s1,s2]  [tok,s1,s2]  all five
+signinit_test.py's: beta = sigmoid(W x)           0.6161       0.6182    0.6581
+correct: beta = sigmoid(W x + a1 s1 + a2 s2 + b)    0.7787       0.7859    0.7910
+
+The correct replay carries an assert against the model's own
+forward pass. signinit_test.py had none, which is why the bug
+survived, and why legacy_0476.py's 'faithful' reproduction
+reproduced it instead of catching it.
