@@ -2,14 +2,37 @@
 Two tests that could each kill our result.
 
 TEST 1 - HAM's cosine router as extra arms.
-HAM (arXiv:2603.22325) ran a gate-input ablation at 800M/50B and found its
-RESIDUAL router (hand-designed cosine, fixed or learned threshold) LOSES to a
-learned input-token router: 48.4 vs 49.1 avg, RULER 26/16/12 vs 42/28/23.
-That is the opposite of our result.
 
-Our proposed reconciliation is that HAM's residual arm is a hand-designed COSINE,
-and cosine DISCARDS MAGNITUDE - exactly the ||e|| factor HOLA found load-bearing.
-So their comparison confounds gate INPUT with LEARNEDNESS. This tests it:
+CORRECTED 2026-10-18, after reading the paper instead of these notes. The
+claim this docstring used to make was WRONG twice over. Verification and
+verbatim quotes are in ../validation/README.md.
+
+HAM (arXiv:2603.22325v2, "Hybrid Associative Memories", Lufkin, Figliolia,
+Millidge, Krishnamurthy) does NOT gate the delta rule's write strength at all.
+Its routing score decides KV-CACHE ADMISSION for an attention branch:
+    Eq 10   e_t = min_h e_t^(h),   m_t = I[e_t >= tau]
+    Eq 11   Attn(q_t, {k_i : m_i = 1}, {v_i : m_i = 1})
+and the RNN update (Eqs 7-8, Eq 15, Algorithm 1) carries NO routing term:
+    S_t <- f(S_{t-1}, k_t^RNN, v_t^RNN)
+Its recurrent branch is an UNMODIFIED Gated DeltaNet. HAM's beta is therefore
+exactly this file's `none` arm. Its 48.4 vs 49.1 was never measuring our
+mechanism, so it was never the opposite of our result.
+
+WRONG CLAIM 2: that cosine loses because it discards magnitude. Our own
+results below refute it. ham_cos_mlp scores 5.06% against ours at 5.51%, and
+wins on accuracy, so magnitude is worth roughly 8% of the effect, not the
+effect.
+
+What survives, and is what these arms actually test, is that HAM's design
+space entangles two axes. Its own FLOP accounting labels them as mutually
+exclusive options:
+    "via RNN state (if not using a learnable router)"
+    "via input (if using a learnable router)"
+Its state-based score is a hand-designed cosine threshold (Eq 16). Its learned
+router is Eq 14, e_t = sigma(MLP(x_t)), fed the TOKEN only. The general form
+it simplifies away, D_theta(S_{t-1} k_t, v_t, x_t), is a learned function of
+exactly these features, but the paper says it "simplif[ies] this learned
+router by only feeding it the input x_t" and never evaluates the general form.
 
     ham_cos_lin   beta = sigmoid(base + a*(1 - cos(S k, v)) + b)   hand-designed
                   feature, linear gate: HAM's arm, adapted to continuous beta

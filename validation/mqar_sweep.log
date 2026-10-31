@@ -1,0 +1,73 @@
+36 runs: 2 state dims x 1 pair counts x 2 variants x 3 arms x 3 seeds, 800 steps
+chance acc 0.0156
+
+[ 1/36] dim  16 pairs  64 plain   none        seed 0  loss 2.6162  acc 0.3652  (4 min)
+[ 2/36] dim  16 pairs  64 plain   none        seed 1  loss 2.5894  acc 0.3735  (10 min)
+[ 3/36] dim  16 pairs  64 plain   none        seed 2  loss 2.6330  acc 0.3625  (18 min)
+[ 4/36] dim  16 pairs  64 plain   ours        seed 0  loss 2.5642  acc 0.3679  (22 min)
+[ 5/36] dim  16 pairs  64 plain   ours        seed 1  loss 3.2677  acc 0.2261  (26 min)
+[ 6/36] dim  16 pairs  64 plain   ours        seed 2  loss 3.2340  acc 0.2330  (30 min)
+[ 7/36] dim  16 pairs  64 plain   token_only  seed 0  loss 2.5962  acc 0.3719  (34 min)
+[ 8/36] dim  16 pairs  64 plain   token_only  seed 1  loss 2.5769  acc 0.3786  (37 min)
+[ 9/36] dim  16 pairs  64 plain   token_only  seed 2  loss 2.6017  acc 0.3714  (41 min)
+[10/36] dim  16 pairs  64 rewrite none        seed 0  loss 2.9397  acc 0.2982  (44 min)
+[11/36] dim  16 pairs  64 rewrite none        seed 1  loss 2.9083  acc 0.3089  (48 min)
+[12/36] dim  16 pairs  64 rewrite none        seed 2  loss 2.9262  acc 0.2985  (51 min)
+[13/36] dim  16 pairs  64 rewrite ours        seed 0  loss 2.7685  acc 0.2938  (55 min)
+[14/36] dim  16 pairs  64 rewrite ours        seed 1  loss 2.7467  acc 0.2926  (59 min)
+[15/36] dim  16 pairs  64 rewrite ours        seed 2  loss 2.7398  acc 0.2957  (62 min)
+[16/36] dim  16 pairs  64 rewrite token_only  seed 0  loss 2.9237  acc 0.2949  (66 min)
+[17/36] dim  16 pairs  64 rewrite token_only  seed 1  loss 2.8982  acc 0.3086  (70 min)
+[18/36] dim  16 pairs  64 rewrite token_only  seed 2  loss 2.8951  acc 0.3039  (73 min)
+[19/36] dim  32 pairs  64 plain   none        seed 0  loss 0.2822  acc 0.9454  (76 min)
+[20/36] dim  32 pairs  64 plain   none        seed 1  loss 0.2988  acc 0.9406  (79 min)
+[21/36] dim  32 pairs  64 plain   none        seed 2  loss 0.3143  acc 0.9373  (81 min)
+[22/36] dim  32 pairs  64 plain   ours        seed 0  loss 0.1289  acc 0.9717  (84 min)
+[23/36] dim  32 pairs  64 plain   ours        seed 1  loss 0.2502  acc 0.9405  (87 min)
+[24/36] dim  32 pairs  64 plain   ours        seed 2  loss 0.1628  acc 0.9627  (90 min)
+[25/36] dim  32 pairs  64 plain   token_only  seed 0  loss 0.2718  acc 0.9460  (92 min)
+[26/36] dim  32 pairs  64 plain   token_only  seed 1  loss 0.2762  acc 0.9457  (95 min)
+[27/36] dim  32 pairs  64 plain   token_only  seed 2  loss 0.2930  acc 0.9410  (98 min)
+[28/36] dim  32 pairs  64 rewrite none        seed 0  loss 0.5987  acc 0.8439  (100 min)
+[29/36] dim  32 pairs  64 rewrite none        seed 1  loss 0.5499  acc 0.8621  (103 min)
+[30/36] dim  32 pairs  64 rewrite none        seed 2  loss 0.5798  acc 0.8566  (105 min)
+[31/36] dim  32 pairs  64 rewrite ours        seed 0  loss 0.2546  acc 0.9277  (108 min)
+[32/36] dim  32 pairs  64 rewrite ours        seed 1  loss 0.2378  acc 0.9367  (111 min)
+[33/36] dim  32 pairs  64 rewrite ours        seed 2  loss 0.2713  acc 0.9227  (114 min)
+[34/36] dim  32 pairs  64 rewrite token_only  seed 0  loss 0.5376  acc 0.8595  (116 min)
+[35/36] dim  32 pairs  64 rewrite token_only  seed 1  loss 0.5149  acc 0.8706  (119 min)
+[36/36] dim  32 pairs  64 rewrite token_only  seed 2  loss 0.5381  acc 0.8602  (122 min)
+
+
+MQAR RESULTS
+
+  dim  pairs  variant         arm     loss      sd     acc      sd  vs none
+   16     64    plain        none   2.6129  0.0220  0.3671  0.0057    0.00%
+   16     64    plain        ours   3.0220  0.3968  0.2757  0.0800  -15.66%
+   16     64    plain  token_only   2.5916  0.0130  0.3740  0.0040    0.81%
+
+   16     64  rewrite        none   2.9247  0.0158  0.3019  0.0061    0.00%
+   16     64  rewrite        ours   2.7516  0.0150  0.2941  0.0016    5.92%
+   16     64  rewrite  token_only   2.9056  0.0157  0.3025  0.0069    0.65%
+
+   32     64    plain        none   0.2984  0.0160  0.9411  0.0041    0.00%
+   32     64    plain        ours   0.1806  0.0626  0.9583  0.0160   39.48%
+   32     64    plain  token_only   0.2803  0.0112  0.9442  0.0028    6.06%
+
+   32     64  rewrite        none   0.5761  0.0246  0.8542  0.0093    0.00%
+   32     64  rewrite        ours   0.2546  0.0168  0.9290  0.0071   55.81%
+   32     64  rewrite  token_only   0.5302  0.0133  0.8634  0.0062    7.98%
+
+
+READ THIS AS A SCOPE STATEMENT, not a win or a loss.
+  gain ~0 everywhere      the 5.5% is specific to tasks containing
+                          keys with CONFLICTING optimal write
+                          policies. That is a real limit and it
+                          explains the larger study's disagreement.
+  gain grows as dim falls contested addresses are enough on their
+                          own, no constructed task needed. That
+                          would be the strongest result here.
+  token_only tracks ours  the control failed, see convergence.py.
+
+3 seeds, eval stream 101.
+total 122 min

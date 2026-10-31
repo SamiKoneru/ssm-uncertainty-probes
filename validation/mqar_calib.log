@@ -1,0 +1,13 @@
+CALIBRATION. Does a single delta layer learn MQAR here?
+chance accuracy = 0.0156
+
+A comparison needs headroom: an arm at 1.000 or at chance tells
+us nothing. Looking for state dims where accuracy sits mid-range.
+
+  dim  pairs  variant     loss     acc  verdict
+   16     64    plain   3.5141  0.1953  USABLE
+   16     64  rewrite   2.8231  0.2798  USABLE
+   32     64    plain   0.1758  0.9708  SATURATED, no headroom
+   32     64  rewrite   0.3242  0.9196  USABLE
+   64     64    plain   0.0027  1.0000  SATURATED, no headroom
+   64     64  rewrite   0.0026  1.0000  SATURATED, no headroom
