@@ -1,0 +1,54 @@
+A7  model gated_seed0 (seed 0)
+  NOTE: 606 is my held-out stream. It appears here because A7 is a
+  question about 04's bar, not about my own conclusion, and the
+  pre-registration licenses pooling all four. My own bars are not
+  scored on it.
+  stream 777: loss 1.5786  rows 49152
+  stream 888: loss 1.5868  rows 49152
+  stream 505: loss 1.6028  rows 49152
+  stream 606: loss 1.6014  rows 49152
+
+==============================================================================
+A7  the premise bar, per stream and pooled
+==============================================================================
+  pooled AUROC of the gate's own [tok, s1, s2], NOISY vs REVISED,
+  writes to an address written before, GBT, by-sequence split.
+
+      stream     AUROC   boot sd                95% CI    n rows   vs 0.80
+         777    0.8095    0.0058   [0.7980, 0.8205]     21776 straddles
+         888    0.7983    0.0067   [0.7848, 0.8108]     21731 straddles
+         505    0.8059    0.0064   [0.7931, 0.8180]     22119 straddles
+         606    0.8093    0.0056   [0.7983, 0.8204]     21856 straddles
+
+  pooled 777+888 (04's two): AUROC 0.8079 +/- 0.0043   95% CI [0.7990, 0.8161]   n 43507
+    -> 04's 'indecisive' was HONEST: the pooled CI contains 0.80
+
+  pooled all four: AUROC 0.8135 +/- 0.0029   95% CI [0.8078, 0.8194]   n 87482
+    -> 04's 'indecisive' was WRONG: the pooled CI EXCLUDES 0.80 (above)
+
+==============================================================================
+A7b  how much of the 777-vs-888 gap is eval sampling at all?
+==============================================================================
+  my retrained seed-0 model: 777 0.8095   888 0.7983   gap +0.0112
+  04 reported:               777 0.8095   888 0.7983   gap +0.0112
+  bootstrap sd of a single-stream estimate ~0.0058,
+  so a gap of this size is about 1.9 single-stream SDs.
+
+  Across SPLIT seeds on one stream, for comparison:
+    777 across 10 splits: mean 0.8057  sd 0.0041  min 0.8009  max 0.8132
+
+==============================================================================
+A2.5  the size of a hypothetical off-by-one (A2 showed there is none)
+==============================================================================
+  s1 alone, NOISY vs REVISED, on CHANGE writes unless stated.
+  Each row changes exactly ONE indexing choice.
+
+  variant                                                   AUROC        n
+  as shipped: label class(x_{t-1}), mask sn_addr           0.8056    11913
+  label class(x_t) instead (the known trap)                0.5201     8039
+  mask sn_task instead (describes the VALUE token)         0.8480     9653
+  pooled over all seen writes, as shipped                  0.3521    22119
+  pooled, label class(x_t)                                 0.4881    22023
+
+  04 reported the label trap as 0.8073 -> 0.5201 on 777 and the
+  mask slip as worth 0.010 of AUROC. Compare above.

@@ -1,0 +1,45 @@
+A10.0  self-tests SKIPPED (stream-independent; see logs/bayes_505.log)
+
+==============================================================================
+A10.1  the exact Bayes ceiling, stream 888
+==============================================================================
+  rows in 04's primary row set: 21731   base rate REVISED 0.4914
+  (no trained model is involved: every column is a function of the
+  token stream, which is how 04's row set and labels are defined.)
+
+  score                                           AUROC        n
+  EXACT BAYES LLR (sufficient statistic)         0.9469    21731
+  o_memb alone                                   0.4797    21731
+  o_ndist alone                                  0.4511    21731
+  return rate (richer summary)                   0.5745    21731
+  consecutive-repeat rate                        0.7636    21731
+  prior visit count                              0.4934    21731
+
+  classifier over feature sets, by-sequence split, GBT:
+    04's oracle set [o_memb, o_ndist]              0.7735 +/- 0.0077   n_test 10591
+    04's oracle set + visit count                  0.8071 +/- 0.0087   n_test 10591
+    richer history summaries                       0.9217 +/- 0.0054   n_test 10591
+    the Bayes LLR alone                            0.9408 +/- 0.0043   n_test 10591
+    the Bayes LLR + everything above               0.9409 +/- 0.0043   n_test 10591
+
+==============================================================================
+A10.2  where the Bayes score gets its certainty
+==============================================================================
+  rows with more distinct values than the 4 option slots: 0.1022
+    those are LOGICALLY certain REVISED. Among them, actual REVISED fraction 1.0000
+    (it must be 1.0; anything else means the likelihood is wrong)
+
+  excluding them, Bayes AUROC on the remaining 19510 rows 0.9329
+  so the ceiling is not carried only by the logically-certain rows.
+
+==============================================================================
+A10.3  the pre-registered bar
+==============================================================================
+  04 reports its near-label ceiling as 0.9206 (everything) /
+  0.9236 (oracle + history) on stream 777, and its ORACLE FEATURES
+  ALONE as 0.7847.
+
+  exact Bayes ceiling here: 0.9469
+  bars: >= 0.95 -> ~0.92 is NOT a real ceiling
+        <= 0.94 -> ~0.92 is about right
+  -> AMBIGUOUS

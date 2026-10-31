@@ -1,0 +1,61 @@
+
+==============================================================================
+A6.1  the arithmetic, no data needed
+==============================================================================
+  logged  rate_delta c_t AUROC            0.3690
+  04's    exact h_meane AUROC            0.3189
+  04's figure: (1-0.3690)/(1-0.3189) = 0.9264   'about 93%'
+  that is a ratio of RAW AUROCs. AUROC's null is 0.5, not 0.
+
+  signal above chance:  c_t 0.1310   exact 0.1811
+  fraction of SIGNAL recovered = 0.1310/0.1811 = 0.7234
+
+  bar: <= 0.80 -> (d) as stated is WRONG
+  -> 0.723, so (d) AS STATED IS WRONG
+
+A6.2  model gated_seed1 (seed 1)   stream 505
+
+==============================================================================
+A6.2  all three arms on ONE model, ONE stream, ONE mask, ONE labelling
+==============================================================================
+  NOISY vs REVISED on writes to an address written before.
+  AUROC < 0.5 means the statistic reads LOWER on REVISED; the
+  'flipped' column is 1-AUROC, as 04 reports it.
+
+  mask sn_addr (correct), n = 22119
+    arm                                   AUROC  flipped  |above chance|
+    h_meane                              0.2992   0.7008          0.2008
+    h_ema                                0.3782   0.6218          0.1218
+    c_t                                  0.4035   0.5965          0.0965
+
+    decomposition of the gap from the exact ceiling:
+      exact MEAN -> exact EMA (the EMA form)   0.6066 recovered
+      exact EMA  -> superposed c_t (CROSSTALK)  0.7923 recovered
+      exact MEAN -> superposed c_t (BOTH)       0.4806 recovered
+
+    bar: >= 0.80 (d) survives;  <= 0.70 (d) fails as stated
+    -> 0.481: (d) FAILS as stated
+
+  mask sn_task (the mask rate_test.py used), n = 21514
+    arm                                   AUROC  flipped  |above chance|
+    h_meane                              0.2992   0.7008          0.2008
+    h_ema                                0.3866   0.6134          0.1134
+    c_t                                  0.3909   0.6091          0.1091
+
+    decomposition of the gap from the exact ceiling:
+      exact MEAN -> exact EMA (the EMA form)   0.5647 recovered
+      exact EMA  -> superposed c_t (CROSSTALK)  0.9623 recovered
+      exact MEAN -> superposed c_t (BOTH)       0.5434 recovered
+
+    bar: >= 0.80 (d) survives;  <= 0.70 (d) fails as stated
+    -> 0.543: (d) FAILS as stated
+
+==============================================================================
+A6.2 note
+==============================================================================
+  The side channel holds the model fixed, so it isolates
+  superposition from every other difference. It does NOT reproduce
+  rate_delta's own training, where the gate consumes c_t and so
+  changes the e_t distribution the memory sees. Retraining was not
+  run (one more 800-step fit on a loaded shared machine) and would
+  reintroduce the model confound this section exists to remove.
