@@ -10,8 +10,8 @@ tells it: each was written while the answer was still moving.
 05_history_loss         the loss experiment 04 said would settle it.
 ```
 
-Code locations are at the bottom. **The three live on different branches and
-none is merged.**
+Code locations are at the bottom. **All three are now merged to main**, see
+the note there for how the merge hazard was resolved.
 
 ---
 
@@ -254,20 +254,26 @@ supposed to make unnecessary.
 
 ## Where the code is
 
-Three branches, **none merged to main**.
+All three merged to main on 2026-10-31, originally from three branches:
 
 ```
-claude/optimistic-easley-09c6ab   process/04_volatility_history/    separability + AUDIT.md
-claude/audit-volatility-05        process/05_audit_volatility/      the 18-attack audit
-claude/sharp-dubinsky-67ebc6      process/05_history_loss/          the loss experiment
+process/04_volatility_history/    separability + AUDIT.md   (claude/optimistic-easley-09c6ab)
+process/05_audit_volatility/      the 18-attack audit       (claude/audit-volatility-05)
+process/05_history_loss/          the loss experiment       (claude/sharp-dubinsky-67ebc6)
 ```
+
+**How the merge hazard was handled.** `claude/audit-volatility-05` was cut from
+`claude/optimistic-easley-09c6ab` early and carried a stale
+`04_volatility_history/` from before every retraction below, so a naive merge
+could have reinstated pre-retraction text. Merging `optimistic-easley` FIRST
+makes the audit branch's copy equal to the merge base, so git keeps the newer
+one with no conflict. Verified after merging: `04/README.md` and
+`04/features.py` are byte-identical to the `optimistic-easley` versions, and
+the retraction markers survive. The audit branch's only real change inside `04`
+was five added log files, which came through.
 
 `05_audit_volatility/` and `05_history_loss/` share only the `05_` numbering,
-not a path, so nothing needs renaming. The real merge hazard is that
-`claude/audit-volatility-05` was cut from `claude/optimistic-easley-09c6ab`
-early and so carries a **stale `04_volatility_history/`** from before every
-retraction below; a merge must take `04` from `optimistic-easley` rather than
-from the audit branch. Both branches also touch `process/README.md`.
+not a path, so nothing needed renaming.
 
 Each directory carries its own pre-registration written before any measurement,
 its own bars, and its logs. `04/AUDIT.md` records what the audit found against

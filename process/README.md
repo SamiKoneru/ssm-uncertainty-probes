@@ -1,11 +1,27 @@
 # Process
 
 > **The volatility-history question is settled and its answer spans three
-> directories on three branches. [`VOLATILITY.md`](VOLATILITY.md) tells it as
-> one story: the question, the ten decisive tests, the two effects that turned
-> out to be tangled together, the eight retractions, and what is still open.
-> Read that rather than reconstructing it from the per-directory READMEs,
-> which were each written while the answer was still moving.**
+> directories. [`VOLATILITY.md`](VOLATILITY.md) tells it as one story: the
+> question, the ten decisive tests, the two effects that turned out to be
+> tangled together, the eight retractions, and what is still open. Read that
+> rather than reconstructing it from the per-directory READMEs, which were
+> each written while the answer was still moving.**
+
+```
+01_wave_interference   REFUTED. State magnitude signals uncertainty. It was a clock.
+02_two_timescale       MECHANISM ONLY. Fast/slow disagreement. Characterised, superseded.
+03_uncertainty_probe   CLOSED, and the write gate found here. Entropy wins; the bound
+                       on the whole state-derived family is measured.
+04_volatility_history  separability: is the information there? + AUDIT.md
+05_audit_volatility    an 18-attack adversarial audit of 04's conclusion
+05_history_loss        the loss experiment 04 said would settle it
+../validation/         open checks on the shipped architecture's own headline
+```
+
+The `04`/`05` trio answer one question together and `VOLATILITY.md` is their
+single narrative. `05_audit_volatility` and `05_history_loss` share only the
+`05_` numbering, not a path: the first audits `04`, the second runs the
+experiment `04` called for.
 
 How the architecture in `../gated_delta_ssm/` was arrived at, and the three
 questions that were answered negatively on the way. Each phase keeps only the
