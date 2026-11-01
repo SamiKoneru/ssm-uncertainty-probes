@@ -35,11 +35,23 @@ write strength beyond the instantaneous residual?**
 4. **But two different effects were tangled together**, and only one is
    volatility. The genuine volatility mechanism is worth **+0.039** and needs a
    feature that reads the task generator's parameters, so it is a ceiling and
-   not buildable. The larger **+0.055** that buildable features deliver comes
-   from somewhere else entirely.
+   not buildable. The larger **+0.055** that the NON-ORACLE features deliver
+   comes from somewhere else entirely.
 5. **And the thing the investigation was convened to fix is still broken.** The
-   1.4pp accuracy gap moves only under the non-buildable oracle arms. The
-   buildable arm **loses** 0.4pp of accuracy while gaining loss.
+   1.4pp accuracy gap moves only under the oracle arms. The non-oracle arm
+   **loses** 0.4pp of accuracy while gaining loss.
+
+> **"Non-oracle" is not the same as "buildable", and earlier drafts of this
+> list said "buildable", which overclaimed.** The +0.055 was measured with
+> EXACT per-symbol bookkeeping: one preallocated slot per vocabulary symbol,
+> indexed by the literal token id, with zero crosstalk. A real layer never
+> sees a token id, has no slot list, and superposes everything, so it can only
+> approximate those features lossily. The +0.055 is therefore an UPPER BOUND
+> on a mechanism nobody has built, not a measurement of one. See the Crosstalk
+> limitation below. The asymmetry matters: this design makes the KILL verdicts
+> (e.g. `ours+cheap`, `process/05_history_loss/RESULTS_cheap.md`) STRONG,
+> because perfect information buying nothing implies lossy information buys
+> nothing, while making every PASS weak.
 
 **Practical answer: do not build a volatility memory.** Not because the
 information is absent, and not because it fails to help loss, but because the
