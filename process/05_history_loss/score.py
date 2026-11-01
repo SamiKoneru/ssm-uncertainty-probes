@@ -53,13 +53,22 @@ BAR = 0.0064          # nats, = 2 * 0.0039 * sqrt(2/3)
 PRIOR_SD = 0.0039     # gated_delta_ssm/train.py docstring, n=3
 VALIDITY_PCT = 4.00   # validation/README.md's own confirmed bar
 CLS = ("STABLE", "NOISY", "REVISED")
-DEFAULT_ARMS = ["none", "ours", "ours+hist", "ours+rate", "ours+oracle",
-                "ours+bayes", "ours+nvis", "ours+fresh", "ours_pub"]
+DEFAULT_ARMS = ["none", "ours", "ours+hist", "ours+rate", "ours+cheap",
+                "ours+oracle", "ours+bayes", "ours+nvis", "ours+fresh",
+                "ours_pub"]
 # ours+nvis and ours+fresh were added after seeing seed 0, as CONTROLS that
 # can only explain the headline gain away. Flagged in every table.
-TEST_ARMS = ["ours+hist", "ours+rate", "ours+oracle", "ours+bayes",
-             "ours+nvis", "ours+fresh"]
-POST_HOC = {"ours+nvis", "ours+fresh"}
+# ours+cheap is ALSO post-hoc but is NOT of that kind: it could support a
+# positive feasibility claim, so on this stream it is exploratory and its
+# verdict is not final until stream 7771 reproduces it. See
+# PREREGISTRATION_cheap.md.
+TEST_ARMS = ["ours+hist", "ours+rate", "ours+cheap", "ours+oracle",
+             "ours+bayes", "ours+nvis", "ours+fresh"]
+POST_HOC = {"ours+nvis", "ours+fresh", "ours+cheap"}
+# Bar 2 for ours+cheap only: 50% of ours+hist's measured +0.0551. Fixed in
+# PREREGISTRATION_cheap.md before the arm existed.
+SUFFICIENCY_BAR = 0.0276
+SUFFICIENCY_REF = "ours+hist"
 # Identifiability is steeply visit-count dependent: the exact Bayes AUROC for
 # NOISY vs REVISED is 0.687 at 1 prior write to the address, 0.786 at 2, 0.890
 # at 3-4, 0.977 at 5-8 and 0.9997 at 9 or more. So a gain, if one exists, need
@@ -166,6 +175,63 @@ def table(res, key, label, bar, arms, note=""):
         r[f"{key}_mean"], r[f"{key}_sd"] = float(v.mean()), float(sd)
 
 
+def cheap_verdict(res, stream):
+    """Apply the TWO pre-registered bars for `ours+cheap` and name the outcome.
+
+    Bar 1 is the repo's existing BAR: does the cheap block help at all.
+    Bar 2 is SUFFICIENCY_BAR: does it keep at least half of what the full
+    five-feature block gets, which is the question that decides whether the
+    d_k x d_v residual-direction state can be deleted.
+
+    Both were fixed in PREREGISTRATION_cheap.md before the arm existed. This
+    function only compares, it never chooses a bar.
+    """
+    need = ("ours", "ours+cheap", SUFFICIENCY_REF)
+    if any(k not in res for k in need):
+        print(f"\nCHEAP-ARM VERDICT: skipped, needs {need}")
+        return
+    base = res["ours"]["loss_mean"]
+    gain = base - res["ours+cheap"]["loss_mean"]
+    gain_ref = base - res[SUFFICIENCY_REF]["loss_mean"]
+    kept = gain / gain_ref if gain_ref else float("nan")
+    print("\nCHEAP-ARM VERDICT   (PREREGISTRATION_cheap.md, bars fixed before "
+          "the arm existed)")
+    print(f"  ours        {base:.4f}")
+    print(f"  ours+cheap  {res['ours+cheap']['loss_mean']:.4f}   "
+          f"gain {gain:+.4f}")
+    print(f"  {SUFFICIENCY_REF:11s} {res[SUFFICIENCY_REF]['loss_mean']:.4f}   "
+          f"gain {gain_ref:+.4f}   <- the full five-feature block")
+    b1 = gain >= BAR
+    b2 = gain >= SUFFICIENCY_BAR
+    print(f"  bar 1 existence     gain >= {BAR:+.4f}   "
+          f"{'PASS' if b1 else 'KILL'}")
+    print(f"  bar 2 sufficiency   gain >= {SUFFICIENCY_BAR:+.4f}   "
+          f"{'PASS' if b2 else 'FAIL'}   "
+          f"(50% of {SUFFICIENCY_REF}'s +0.0551)")
+    print(f"  fraction of the full block's gain retained: {100 * kept:.1f}%")
+    if b2:
+        out = ("VIABLE. The d_k-only features carry the bulk of it, so the "
+               "d_k x d_v direction state can be dropped. Next: the "
+               "chunk-frozen version, measured against this as its ceiling.")
+    elif b1:
+        out = ("REAL BUT MINORITY. The direction features carry most of the "
+               "gain; the d_k x d_v cost stays load-bearing and feasibility "
+               "stays open.")
+    else:
+        out = ("KILL. Worthless alone AND worthless together: "
+               "superadditivity does not rescue the cheap block, the "
+               "direction features are necessary, and the d_k x d_v cost is "
+               "unavoidable.")
+    print(f"  OUTCOME: {out}")
+    status = ("CONFIRMATION" if stream == 7771 else
+              "EXPLORATORY (this arm was specified after reading 5150's "
+              "ablation; not final until 7771 reproduces it)")
+    print(f"  STATUS: {status}")
+    res["_cheap"] = {"gain": float(gain), "gain_ref": float(gain_ref),
+                     "kept": float(kept), "bar1": bool(b1), "bar2": bool(b2),
+                     "stream": int(stream), "confirmation": stream == 7771}
+
+
 def pooled_sd(res, key):
     """Within-arm seed sd pooled across arms: a nuisance-parameter estimate,
     not the contrast of interest."""
@@ -215,6 +281,8 @@ def main():
 
     table(res, "loss", "PRIMARY: overall eval loss (nats)", BAR, TEST_ARMS,
           "(pre-registered, from the repo's prior seed sd 0.0039)")
+
+    cheap_verdict(res, a.stream)
 
     psd = pooled_sd(res, "loss_hard")
     bar_hard = 2 * psd * np.sqrt(2 / 3)

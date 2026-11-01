@@ -5,7 +5,7 @@ The confound this file exists to avoid is recorded in validation/README.md on
 origin/validation-suite: every published comparison in this repo pitted a
 3-input MLP gate against NO GATE AT ALL, confounding "the gate can see more"
 with "the gate has more parameters". So all three gated arms here get the SAME
-gate input width (8), the same parameter count, the same initialisation and the
+gate input width (9), the same parameter count, the same initialisation and the
 same FLOPs, and differ only in which columns are zeroed before the MLP sees
 them.
 
@@ -13,6 +13,7 @@ them.
     ours         [tok, s1, s2, 0 x 6]               masked control
     ours+hist    [tok, s1, s2, h1..h5, 0]           all five history features
     ours+rate    [tok, s1, s2, 0,0,0,h_meane,0,0]   the rate memory alone
+    ours+cheap   [tok, s1, s2, 0,0,h3,h4,h5,0]      every d_k-cost feature
     ours+oracle  [tok, s1, s2, h1..h5, o_memb]      near-label oracle
     ours+bayes   [tok, s1, s2, h1..h5, o_memb, b_post]  THE TRUE CEILING
     ours_pub     [tok, s1, s2]                      literal shipped 3-input gate
@@ -79,6 +80,13 @@ ARMS = {
     "ours":         (N_EXTRA,  ()),
     "ours+hist":    (N_EXTRA,  (0, 1, 2, 3, 4)),
     "ours+rate":    (N_EXTRA,  (3,)),                    # h_meane only
+    # the CHEAP block: every feature whose per-address state is d_k, i.e. a
+    # scalar per address, with no residual-direction vector anywhere. This is
+    # the maximal cheap arm, so a KILL here kills every cheap subset.
+    # Post-hoc and could support a POSITIVE claim, unlike the two controls
+    # below: exploratory on 5150, confirmed only on 7771.
+    # See PREREGISTRATION_cheap.md.
+    "ours+cheap":   (N_EXTRA,  (2, 3, 4)),               # h_ratio+h_meane+h_nvis
     "ours+oracle":  (N_EXTRA,  (0, 1, 2, 3, 4, 5)),      # near-label oracle
     "ours+bayes":   (N_BAYES,  (0, 1, 2, 3, 4, 5, 6)),   # TRUE ceiling
     # added after seed 0, as CONTROLS that can only explain the gain AWAY
@@ -285,9 +293,9 @@ if __name__ == "__main__":
         n_hist, keep = ARMS[a]
         print(f"{a:12s}{n:>10,}{3 + n_hist:>9}  "
               f"{[HIST[i] for i in keep] if keep else '-'}")
-    gated = ["ours", "ours+hist", "ours+rate", "ours+oracle"]
+    gated = ["ours", "ours+hist", "ours+rate", "ours+cheap", "ours+oracle"]
     ok = len({counts[a] for a in gated}) == 1
-    print(f"\nthe four gated arms: "
+    print(f"\nthe {len(gated)} N_EXTRA-width arms: "
           f"{'IDENTICAL param count, control is valid' if ok else 'MISMATCH, control is INVALID'}")
     print(f"none     is {counts['ours'] - counts['none']:+,} vs ours "
           f"(no gate used; mismatch is by design and is reported)")
