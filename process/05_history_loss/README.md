@@ -103,6 +103,16 @@ drop h_cosmean    +0.0544        drop ALL        +0.2480
 trained set, a 15x gap. The features are not independent contributions; the
 gate co-adapts to the whole block.
 
+**Do not read that table as attribution.** It is tempting to note that the
+two `d_k`-cost columns (`h_meane` +0.0934, `h_nvis` +0.0778) outweigh the two
+`d_k x d_v` direction columns (`h_cosmean` +0.0544, `h_cos` +0.0299) and
+conclude a cheap version exists. `ours+cheap` was built to test exactly that
+reading and refuted it: all three cheap features together score **-0.0005**
+against `ours` on a fresh stream, KILL on both pre-registered bars, and they
+degrade the beta discrimination `ours` already had. See `RESULTS_cheap.md`.
+The standalone arms were the honest signal; the knockout ranks co-adaptation,
+which is what this file's own `ablate.py` docstring says it measures.
+
 ### Every gain is inflated by +0.0022
 
 `ours` (1.5531) is slightly worse than `ours_pub` (1.5509), so masking six

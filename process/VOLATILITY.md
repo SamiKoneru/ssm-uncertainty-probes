@@ -223,6 +223,13 @@ That metric:
   residual-direction family last (+0.017). On loss, `h_meane` alone is worth
   +0.0060, below the bar, and the direction family carries the gain. Exactly
   reversed.
+  **CONFIRMED 2026-10-31** by a dedicated arm rather than by inference.
+  `ours+cheap` keeps every `d_k`-cost feature (`h_ratio`, `h_meane`,
+  `h_nvis`) and drops both direction features: it scores **-0.0018** on 5150
+  and **-0.0005** on fresh stream 7771, KILL on both pre-registered bars,
+  against `ours+hist`'s +0.0551 / +0.0578. So the direction family is
+  load-bearing, the sentence above stands, and the `d_k x d_v` cost is real.
+  `process/05_history_loss/RESULTS_cheap.md`.
 - **could not separate the two effects** in the table above, so it reported a
   volatility effect and a non-volatility effect as one number.
 - **is not monotone in what it measures.** Adding a sufficient statistic for the
