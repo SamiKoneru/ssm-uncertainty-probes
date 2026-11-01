@@ -153,6 +153,8 @@ def table(res, key, label, bar, arms, note=""):
           f"{'gain vs ours':>14}{'per-seed gain':>28}{'verdict':>9}")
     base = res.get("ours")
     for arm, r in res.items():
+        if arm.startswith("_"):          # metadata, not an arm
+            continue
         v = np.array([run[key] for run in r["runs"]])
         sd = v.std(ddof=1) if len(v) > 1 else float("nan")
         cells = "".join(f"{z:>9.4f}" for z in v) + " " * (9 * (3 - len(v)))
@@ -236,7 +238,9 @@ def pooled_sd(res, key):
     """Within-arm seed sd pooled across arms: a nuisance-parameter estimate,
     not the contrast of interest."""
     sq, df = 0.0, 0
-    for r in res.values():
+    for arm, r in res.items():
+        if arm.startswith("_"):          # metadata, not an arm
+            continue
         v = np.array([run[key] for run in r["runs"]])
         if len(v) > 1:
             sq += ((v - v.mean()) ** 2).sum()
