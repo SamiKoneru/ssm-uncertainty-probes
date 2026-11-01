@@ -229,6 +229,21 @@ It is also not a constant policy: forcing each arm to its own mean beta costs
 1.7517. Their beta VARIATION is worth more than anyone else's, because in EMA
 terms moving between 0.0005 and 0.01 is a 20x swing in update rate.
 
+> **Where that variation actually is, measured later** (`RESULTS_beta_shape.md`,
+> both streams, three seeds). NOT in a tail: `frac(beta > 0.5)` is exactly
+> 0.0000 and **not one write out of 48,960 exceeds beta 0.094**, so the policy
+> is near-flat and no spike explains the gain. And NOT across classes, despite
+> the table above: `ours+hist`'s NOISY and REVISED means are identical, and the
+> contrast is across WRITE TYPES inside a class, a REVISED `change` getting 3.5x
+> a REVISED `repeat` and 2.3x a NOISY `change`. Averaging over write types
+> inside a class destroys the contrast, which is why this table looks flat.
+> Two further things that section 4 does not predict: the KILLED `ours+cheap`
+> targets `REVISED & change` as accurately as `ours+hist` does (enrichment 12.33
+> against 12.20, at a ceiling of 12.92), so targeting does not separate the
+> arms; and `ours+cheap` seed 1 reaches mean beta 0.0039, inside this regime,
+> and is its worst seed. The gain itself localizes to addresses seen **once or
+> twice**: +0.3301 nats at one prior write, -0.0257 at nine or more.
+
 **The constant test validates itself on `none`**: forcing the input-only gate
 to its own mean costs **+0.0001**, so it really is a constant in disguise,
 which is what the task's per-sequence class randomisation guarantees. That

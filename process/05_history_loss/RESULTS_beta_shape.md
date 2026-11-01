@@ -123,31 +123,49 @@ address has been seen once or twice and `||e_t||` is still ambiguous.
 
 That is the first real localization of the +0.0578 in this directory.
 
-## A hypothesis, with its own counterexample
+## Correction: the accumulator story is already in the README, not new here
 
-The two arms with the lowest mean beta are the two best (`ours+oracle` 0.0017 at
-+0.0730, `ours+hist` 0.0021 at +0.0578; everything else is at 0.05 to 0.29).
-With every beta << 1 the delta rule's forgetting factor `prod(1 - beta_i)`
-stays near 1, so `S_t k` becomes approximately `sum_i beta_i v_i`, a linear
-accumulator rather than an EMA, and the readout's `norm(S q_t)` makes the
-overall scale free. In that regime beta stops being a rate and becomes a soft
-weight over every value ever written to the address, which would let one gate
-serve NOISY (near-uniform weights, averaging) and REVISED (recent writes
-weighted 3.5x higher) at the same time, which is exactly what the task was built
-to require.
+An earlier draft of this file presented the following as a hypothesis generated
+by this run. It is not. `README.md` section 4 already states it, and already has
+stronger evidence for it than anything measured here:
 
-**Known counterexample, in this same run.** `ours+cheap` at seed 1 has mean beta
-0.0039, inside that low-beta regime, and it is its WORST seed by loss (-0.0243
-on 5150, -0.0277 on 7771). So a low absolute beta is not sufficient. This is a
-hypothesis with a counterexample already against it, not a finding, and no claim
-rests on it.
+> `beta -> 0` turns the memory into a uniform running average over everything
+> ever written to that address
 
-The sharp test, which costs no training: rescale `ours+bayes`'s beta by a
-constant at eval time, preserving its ratios exactly, and see whether its loss
-improves as the constant shrinks. Its ratio (3.24) is better than `ours+hist`'s
-(2.33) and its gain is worse, so if the regime is what matters, scaling it down
-should recover the difference. If scaling it down does nothing or hurts, the
-hypothesis is dead. Not yet run.
+with the scale-invariance of `head(norm(S q))` spelled out, and with
+`const_test.py`'s result that forcing `ours+hist` to its own mean beta costs
+**+0.2564** nats while the best constant over a 16-point grid only reaches
+1.7517 against 1.4979 as trained. That is direct evidence that the beta
+VARIATION does the work, and it predates this run.
+
+What this run adds to that section is a refinement and a problem.
+
+**The refinement.** The README reads the per-class means (`ours+hist` 0.001 /
+0.002 / 0.002) as "precisely the per-class pattern" the accumulator story
+predicts, but NOISY and REVISED are IDENTICAL in those means. The variation is
+not across classes at all, it is across WRITE TYPES within a class:
+
+```
+ours+hist      unseen   repeat   change
+  STABLE        0.003    0.001       -
+  NOISY         0.003    0.001    0.003
+  REVISED       0.003    0.002    0.007
+```
+
+A REVISED `change` gets 3.5x the weight of a REVISED `repeat` and 2.3x that of a
+NOISY `change`. Averaging over write types inside a class destroys exactly the
+contrast that matters, which is why the published per-class table looks flat.
+
+**The problem.** `ours+cheap` at seed 1 has mean beta 0.0039, inside the
+accumulator regime, and it is its WORST seed by loss (-0.0243 on 5150, -0.0277
+on 7771). Being in that regime is therefore not sufficient, and the README's
+section 4 does not account for an arm that reaches the regime and loses.
+
+The sharp test, which costs no training and is not yet run: rescale
+`ours+bayes`'s beta by a constant at eval time, preserving its ratios exactly.
+Its ratio (3.24) is better than `ours+hist`'s (2.33) and its gain is worse, so if
+the regime is what matters, scaling it down should recover the difference. If it
+does nothing or hurts, the regime account is incomplete in a second way.
 
 ## Anomalies noticed in passing
 
