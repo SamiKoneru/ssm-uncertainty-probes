@@ -1,0 +1,31 @@
+=== PRE-FLIGHT ===
+   step 4  loss 3.7592
+
+ALL CHECKS PASS. ours+cheap is param-matched, provably blind to the expensive features, provably sighted on the cheap ones, and trains.
+=== importing 27 existing checkpoints from the original campaign ===
+=== TRAINING ours+cheap, seeds 0 1 2 ===
+  seed 0: RESULT {"arm": "ours+cheap", "seed": 0, "secs": 735.0, "params": 62250, "clamp": 0.0}
+  seed 1: RESULT {"arm": "ours+cheap", "seed": 1, "secs": 734.4, "params": 62250, "clamp": 0.0}
+  seed 2: RESULT {"arm": "ours+cheap", "seed": 2, "secs": 734.1, "params": 62250, "clamp": 0.0}
+=== SCORING ===
+--- stream 5150 ---
+CHEAP-ARM VERDICT   (PREREGISTRATION_cheap.md, bars fixed before the arm existed)
+  ours        1.5531
+  ours+cheap  1.5548   gain -0.0018
+  ours+hist   1.4979   gain +0.0551   <- the full five-feature block
+  bar 1 existence     gain >= +0.0064   KILL
+  bar 2 sufficiency   gain >= +0.0276   FAIL   (50% of ours+hist's +0.0551)
+  fraction of the full block's gain retained: -3.2%
+  OUTCOME: KILL. Worthless alone AND worthless together: superadditivity does not rescue the cheap block, the direction features are necessary, and the d_k x d_v cost is unavoidable.
+  STATUS: EXPLORATORY (this arm was specified after reading 5150's ablation; not final until 7771 reproduces it)
+--- stream 7771 ---
+CHEAP-ARM VERDICT   (PREREGISTRATION_cheap.md, bars fixed before the arm existed)
+  ours        1.5761
+  ours+cheap  1.5766   gain -0.0005
+  ours+hist   1.5183   gain +0.0578   <- the full five-feature block
+  bar 1 existence     gain >= +0.0064   KILL
+  bar 2 sufficiency   gain >= +0.0276   FAIL   (50% of ours+hist's +0.0551)
+  fraction of the full block's gain retained: -0.8%
+  OUTCOME: KILL. Worthless alone AND worthless together: superadditivity does not rescue the cheap block, the direction features are necessary, and the d_k x d_v cost is unavoidable.
+  STATUS: CONFIRMATION
+ALL_CHEAP_DONE

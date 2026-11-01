@@ -1,0 +1,118 @@
+EVAL STREAM 7771   seeds [0, 1, 2]   6 batches x 32 sequences
+fraction of positions with a NOISY or REVISED query: 0.5216
+
+arm             params  train min
+none            62,058       17.9
+ours            62,250       19.0
+ours+hist       62,250       10.4
+ours+rate       62,250       10.4
+ours+cheap      62,250       12.2
+ours+oracle     62,250       14.6
+ours+bayes      62,282       26.5
+ours+nvis       62,250       14.6
+ours+fresh      62,314       14.7
+ours_pub        62,058       13.3
+
+PRIMARY: overall eval loss (nats)   bar +0.0064 nats (pre-registered, from the repo's prior seed sd 0.0039)
+  (* = control arm added after seeing seed 0; can only explain the gain away)
+  arm                 s0       s1       s2     mean      sd  gain vs ours               per-seed gain  verdict
+  none            1.6673   1.6644   1.6695   1.6671  0.0026                                                  
+  ours            1.5786   1.5757   1.5742   1.5761  0.0022                                                  
+  ours+hist       1.5173   1.5195   1.5181   1.5183  0.0011       +0.0578  +0.0613  +0.0561  +0.0561     PASS
+  ours+rate       1.5730   1.5722   1.5655   1.5702  0.0041       +0.0059  +0.0055  +0.0035  +0.0087     KILL
+  ours+cheap      1.5677   1.6000   1.5621   1.5766  0.0204       -0.0005  +0.0108  -0.0243  +0.0120     KILL *
+  ours+oracle     1.5022   1.5029   1.5041   1.5031  0.0010       +0.0730  +0.0764  +0.0727  +0.0700     PASS
+  ours+bayes      1.5350   1.5403   1.5328   1.5360  0.0038       +0.0401  +0.0436  +0.0354  +0.0413     PASS
+  ours+nvis       1.5542   1.6153   1.5575   1.5757  0.0344       +0.0005  +0.0244  -0.0397  +0.0167     KILL *
+  ours+fresh      1.5709   1.5716   1.5758   1.5727  0.0026       +0.0034  +0.0077  +0.0041  -0.0016     KILL *
+  ours_pub        1.5746   1.5717   1.5740   1.5734  0.0015                                                  
+
+CHEAP-ARM VERDICT   (PREREGISTRATION_cheap.md, bars fixed before the arm existed)
+  ours        1.5761
+  ours+cheap  1.5766   gain -0.0005
+  ours+hist   1.5183   gain +0.0578   <- the full five-feature block
+  bar 1 existence     gain >= +0.0064   KILL
+  bar 2 sufficiency   gain >= +0.0276   FAIL   (50% of ours+hist's +0.0551)
+  fraction of the full block's gain retained: -0.8%
+  OUTCOME: KILL. Worthless alone AND worthless together: superadditivity does not rescue the cheap block, the direction features are necessary, and the d_k x d_v cost is unavoidable.
+  STATUS: CONFIRMATION
+
+SECONDARY, EXPLORATORY: loss on NOISY+REVISED queries only   bar +0.0304 nats (from pooled within-arm sd 0.0186, computed not asserted)
+  (* = control arm added after seeing seed 0; can only explain the gain away)
+  arm                 s0       s1       s2     mean      sd  gain vs ours               per-seed gain  verdict
+  none            2.7861   2.7881   2.7848   2.7864  0.0017                                                  
+  ours            2.6425   2.6556   2.6361   2.6447  0.0099                                                  
+  ours+hist       2.5741   2.5514   2.5668   2.5641  0.0116       +0.0806  +0.0684  +0.1042  +0.0694     PASS
+  ours+rate       2.6333   2.6525   2.6300   2.6386  0.0122       +0.0061  +0.0091  +0.0030  +0.0061     KILL
+  ours+cheap      2.6195   2.6889   2.6211   2.6432  0.0396       +0.0015  +0.0229  -0.0333  +0.0150     KILL *
+  ours+oracle     2.5253   2.5431   2.5452   2.5379  0.0109       +0.1068  +0.1171  +0.1124  +0.0910     PASS
+  ours+bayes      2.5755   2.5911   2.5833   2.5833  0.0078       +0.0614  +0.0670  +0.0645  +0.0529     PASS
+  ours+nvis       2.6108   2.6700   2.6093   2.6301  0.0346       +0.0147  +0.0316  -0.0145  +0.0268     KILL *
+  ours+fresh      2.6306   2.6474   2.6405   2.6395  0.0084       +0.0052  +0.0119  +0.0082  -0.0044     KILL *
+  ours_pub        2.6342   2.6485   2.6350   2.6392  0.0081                                                  
+
+CROSS-CHECK on the primary: pooled within-arm sd 0.0129 -> implied bar +0.0210 vs the pre-registered +0.0064
+  the pre-registered bar is OPTIMISTIC: this run was NOISIER than the prior sd, so the test is UNDERPOWERED. Reported, bar NOT moved.
+
+VALIDITY GATE: the masked `ours` must reproduce the published effect
+  none 1.6671  ours 1.5761  -> +5.45%   bar >= 4.00%   PASS
+
+arm               acc  acc hard   loss by class ('STABLE', 'NOISY', 'REVISED')
+none           0.6269    0.3541      0.4465   3.1360   2.4227
+ours           0.6387    0.3767      0.4108   2.8881   2.3916
+ours+hist      0.6340    0.3676      0.3778   2.7194   2.4025
+ours+rate      0.6372    0.3738      0.4051   2.8791   2.3886
+ours+cheap     0.6291    0.3587      0.4135   2.8429   2.4355
+ours+oracle    0.6403    0.3797      0.3747   2.6642   2.4064
+ours+bayes     0.6418    0.3828      0.3940   2.7890   2.3693
+ours+nvis      0.6306    0.3613      0.4258   2.8241   2.4283
+ours+fresh     0.6401    0.3793      0.4095   2.8808   2.3885
+ours_pub       0.6388    0.3769      0.4111   2.8826   2.3861
+
+BASELINE CHECK: ours 1.5761 vs ours_pub 1.5734 -> masking the 6 columns costs +0.0027 nats
+  arm             vs ours   vs ours_pub  inflation
+  ours+hist       +0.0578       +0.0551    +0.0027
+  ours+rate       +0.0059       +0.0032    +0.0027
+  ours+cheap      -0.0005       -0.0032    +0.0027
+  ours+oracle     +0.0730       +0.0703    +0.0027
+  ours+bayes      +0.0401       +0.0374    +0.0027
+  ours+nvis       +0.0005       -0.0022    +0.0027
+  ours+fresh      +0.0034       +0.0007    +0.0027
+
+EXPLORATORY, no bar: loss on NOISY+REVISED queries, sliced by prior writes to the QUERY address
+  (Bayes AUROC for the class at those counts: 0.687 / 0.786 / 0.890 / 0.977 / 0.9997 at 1 / 2 / 3-4 / 5-8 / 9+)
+  arm            0 (fresh)          1          2        3-4        5-8         9+
+  n per seed         3,879      3,174      2,767      4,474      5,677      5,669
+  none              3.7573     2.7844     2.6765     2.6154     2.5383     2.5600
+  ours              3.7763     3.0418     2.7621     2.4730     2.2434     2.1282
+  ours+hist         3.6864     2.7117     2.6109     2.4146     2.2192     2.1539
+  ours+rate         3.7700     2.9320     2.7236     2.4687     2.2662     2.1659
+  ours+cheap        3.7812     2.8405     2.6993     2.5293     2.3202     2.1399
+  ours+oracle       3.6821     2.7149     2.6041     2.3867     2.1730     2.1081
+  ours+bayes        3.7979     2.9166     2.6955     2.4372     2.1731     2.0368
+  ours+nvis         3.8049     2.8433     2.6639     2.4827     2.2874     2.1497
+  ours+fresh        3.7771     3.0643     2.7543     2.4576     2.2332     2.1177
+  ours_pub          3.7768     3.0403     2.7486     2.4592     2.2382     2.1266
+
+  gain vs ours (positive = history helped)
+  ours+hist        +0.0899    +0.3301    +0.1512    +0.0583    +0.0242    -0.0257
+  ours+rate        +0.0064    +0.1098    +0.0385    +0.0043    -0.0228    -0.0377
+  ours+cheap       -0.0049    +0.2013    +0.0627    -0.0563    -0.0768    -0.0116
+  ours+oracle      +0.0942    +0.3269    +0.1580    +0.0863    +0.0704    +0.0201
+  ours+bayes       -0.0216    +0.1252    +0.0666    +0.0358    +0.0703    +0.0914
+  ours+nvis        -0.0286    +0.1984    +0.0982    -0.0097    -0.0440    -0.0214
+  ours+fresh       -0.0008    -0.0225    +0.0078    +0.0154    +0.0103    +0.0105
+
+arm          mean beta by key class on seen writes ('STABLE', 'NOISY', 'REVISED')
+none              0.387     0.386     0.387
+ours              0.022     0.137     0.116
+ours+hist         0.001     0.002     0.002
+ours+rate         0.032     0.135     0.122
+ours+cheap        0.011     0.053     0.053
+ours+oracle       0.001     0.002     0.002
+ours+bayes        0.028     0.065     0.108
+ours+nvis         0.005     0.024     0.030
+ours+fresh        0.024     0.131     0.111
+ours_pub          0.174     0.132     0.111
+
+wrote /Users/skon/Desktop/Projects/ssm-uncertainty-probes/process/05_history_loss/results_7771.json

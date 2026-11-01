@@ -1,0 +1,30 @@
+1. PARAM IDENTITY
+   ours            62,250
+   ours+hist       62,250
+   ours+rate       62,250
+   ours+cheap      62,250
+   ours+oracle     62,250
+   all identical at 62,250  OK
+   hist_mask [0.0, 0.0, 1.0, 1.0, 1.0, 0.0]  keeps ['h_ratio', 'h_meane', 'h_nvis']  OK
+   reference logits (4, 256, 40)  mean -0.001151
+
+2. BLIND to the d_k x d_v features (must be bit-identical)
+   perturb h_cos       max |dlogit| 0.000e+00   OK
+   perturb h_cosmean   max |dlogit| 0.000e+00   OK
+   perturb o_memb      max |dlogit| 0.000e+00   OK
+   provably blind: no residual-direction information reaches the gate
+
+3. SIGHTED on the d_k features (must change the logits)
+   perturb h_ratio     max |dlogit| 1.492e-01   OK
+   perturb h_meane     max |dlogit| 1.178e-01   OK
+   perturb h_nvis      max |dlogit| 1.230e-01   OK
+   provably sighted: every cheap column moves the output
+
+4. SMOKE (5 steps at the published lr)
+   step 0  loss 3.7246
+   step 1  loss 3.9554
+   step 2  loss 3.8637
+   step 3  loss 3.7950
+   step 4  loss 3.7592
+
+ALL CHECKS PASS. ours+cheap is param-matched, provably blind to the expensive features, provably sighted on the cheap ones, and trains.

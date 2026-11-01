@@ -1,0 +1,12 @@
+arm ours+cheap  seed 0  800 steps  batch 24  2 threads
+  step    0  loss 3.8197  1s
+  step  100  loss 1.7731  87s
+  step  200  loss 1.4983  176s
+  step  300  loss 1.7204  263s
+  step  400  loss 1.6139  348s
+  step  500  loss 1.6921  446s
+  step  600  loss 1.7757  561s
+  step  700  loss 1.5407  647s
+  step  799  loss 1.5963  735s
+saved /Users/skon/Desktop/Projects/ssm-uncertainty-probes/process/05_history_loss/checkpoints/ours_cheap_seed0.pt   735s   params 62,250   h_ratio clamp rate 0.000%
+RESULT {"arm": "ours+cheap", "seed": 0, "secs": 735.0, "params": 62250, "clamp": 0.0}
